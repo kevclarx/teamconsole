@@ -1,0 +1,48 @@
+<!-- Nested node template -->
+<script type="text/ng-template" id="nodes_renderer.html">
+  <div ui-tree-handle class="tree-node tree-node-content">
+    <a class="btn btn-success btn-xs" nodrag ng-click="toggle(this)" ng-if="node.nodes.length > 0">
+      <span class="glyphicon"
+            ng-class="{'glyphicon-chevron-right': collapsed, 'glyphicon-chevron-down': !collapsed}">
+      </span>
+    </a>
+    <a href="" ng-click="setCurrent(node)">{{node.name}}</a>
+    <a class="pull-right btn btn-danger btn-xs" nodrag ng-click="remove(this)" ng-if="node.id !== 0"><span
+        class="glyphicon glyphicon-remove"></span></a>
+    <a class="pull-right btn btn-primary btn-xs" nodrag ng-click="newSubItem(this)" style="margin-right: 8px;"><span
+        class="glyphicon glyphicon-plus"></span></a>
+  </div>
+  <ol ui-tree-nodes="" ng-model="node.nodes" ng-class="{hidden: collapsed}" data-nodrag>
+    <li ng-repeat="node in node.nodes" ui-tree-node ng-include="'nodes_renderer.html'">
+    </li>
+  </ol>
+</script>
+
+<div class="row">
+  <div class="col-sm-6">
+    <div class="panel panel-default">
+      <div class="panel-heading">
+        <h3 class="panel-title">Devices</h3>
+      </div>
+      <div class="panel-body">
+        <div ui-tree id="tree-root">
+          <ol ui-tree-nodes="" ng-model="data" data-nodrag data-collapsed="true">
+            <li ng-repeat="node in data" ui-tree-node ng-include="'nodes_renderer.html'"></li>
+          </ol>
+        </div>
+      </div>
+    </div>
+  </div>
+   
+  <div class="col-sm-6">
+    <div class="panel panel-default">
+      <div class="panel-heading">
+        <h3 class="panel-title">Details</h3>
+      </div>
+      <div class="panel-body">
+         SSH username  <input type="text" ng-model="currentUser" size="10"><br><br>
+        <a href="" ng-click="sshclient()">{{ currentNode.name }}</a>
+      </div>
+    </div>
+  </div>
+</div>

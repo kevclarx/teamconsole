@@ -1,0 +1,7 @@
+[
+    {"name":"root","id":0,"nodes": 
+        [ 
+            { "name":"localhost","ipaddress":"127.0.0.1","id":1, "nodes": [] }
+        ]
+    }
+]
