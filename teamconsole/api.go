@@ -9,23 +9,23 @@ import (
 )
 
 func Create(w http.ResponseWriter, r *http.Request) {
-	node := &Node{}
-	node.Name = r.FormValue("name")
-	node.Ipaddress = r.FormValue("ipaddress")
-	node.Id = nodelist.nextid
-	nodelist.nextid++
-	nodelist.nodes = append(nodelist.nodes, node)
+	/*	node := &Node{}
+		node.Name = r.FormValue("name")
+		node.Ipaddress = r.FormValue("ipaddress")
+		node.Id = nodelist.nextid
+		nodelist.nextid++
+		nodelist.nodes = append(nodelist.nodes, node)
 
-	// Write it out to disk
-	if err := nodelist.WriteFile(); err != nil {
-		panic(err)
-	}
+		// Write it out to disk
+		if err := nodelist.WriteFile(); err != nil {
+			panic(err)
+		}
 
-	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
-	w.WriteHeader(http.StatusCreated)
-	if err := json.NewEncoder(w).Encode(&node); err != nil {
-		panic(err)
-	}
+		w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+		w.WriteHeader(http.StatusCreated)
+		if err := json.NewEncoder(w).Encode(&node); err != nil {
+			panic(err)
+		} */
 }
 
 func Update(w http.ResponseWriter, r *http.Request) {

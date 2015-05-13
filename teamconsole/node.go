@@ -6,12 +6,23 @@ import (
 	"sync"
 )
 
+// CType is the console type
+type CType int64
+
+const (
+	SSH CType = iota
+	HTTP
+	TELNET
+)
+
 type Node struct {
-	Name      string  `json:"name"`
-	Ipaddress string  `json:"ipaddress"`
-	Id        int64   `json:"id"`
-	Nodes     []*Node `json:"nodes"`
-	m         sync.Mutex
+	Id       int64      `json:"id"`
+	ParentId int64      `json:"parentid"`
+	Name     string     `json:"name"`
+	Desc     string     `json:"desc"`
+	Notes    string     `json:"notes"`
+	Consoles []*Console `json:"consoles"`
+	m        sync.Mutex
 }
 
 type NodeList struct {
@@ -19,6 +30,13 @@ type NodeList struct {
 	filename string
 	nextid   int64
 	m        sync.Mutex
+}
+
+type Console struct {
+	Name        string `json:"name"`
+	Ipaddress   string `json:"ipaddress"`
+	ConsoleType CType  `json:"type"`
+	Port        int64  `json:"port"`
 }
 
 // Read nodes json file
