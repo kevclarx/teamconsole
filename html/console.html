@@ -13,7 +13,7 @@
         class="glyphicon glyphicon-plus"></span></a>
   </div>
   <ol ui-tree-nodes="" ng-model="node.nodes" ng-class="{hidden: collapsed}" data-nodrag>
-    <li ng-repeat="node in node.nodes" ui-tree-node ng-include="'nodes_renderer.html'">
+    <li ng-repeat="node in node.nodes" ui-tree-node ng-include="'nodes_renderer.html'" collapsed="true">
     </li>
   </ol>
 </script>
@@ -39,9 +39,46 @@
       <div class="panel-heading">
         <h3 class="panel-title">Details</h3>
       </div>
-      <div class="panel-body">
-         SSH username  <input type="text" ng-model="currentUser" size="10"><br><br>
-        <a href="" ng-click="sshclient()">{{ currentNode.name }}</a>
+      <div class="panel-body" ng-show="currentNode">
+        <a class="pull-right btn btn-primary btn-xs" ng-click="editItem()" style="margin-right: 8px;"> 
+          <span class="glyphicon glyphicon-pencil"></span>
+        </a>
+         <form class="form-horizontal">
+          <div class="form-group">
+            <label for="name" class="col-sm-2 control-label">Name</label>
+            <div class="col-sm-5">
+              <input type="text" class="form-control" id="name" placeholder="Name" name="name" value="{{currentNode.name}}">
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="desc" class="col-sm-2 control-label">Description</label>
+            <div class="col-sm-5">
+              <textarea class="form-control">{{currentNode.desc}}</textarea>
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="notes" class="col-sm-2 control-label">Notes</label>
+            <div class="col-sm-5">
+              <textarea class="form-control">{{currentNode.notes}}</textarea>
+            </div>
+          </div>
+          <div class="panel panel-default">
+            <div class="panel-heading">Consoles</div>
+              <table class="table">
+                <th>Name</th><th><span>IP/Hostname</span></th><th>Type</th>
+                  <tr ng-repeat="console in currentNode.consoles">
+                    <td> {{ console.name }} </td><td> <span class="glyphicon glyphicon-console">{{ console.ipaddress }}</span></td>
+                    <td><select class="form-control">
+                        <option>SSH</option>
+                        <option>HTTP</option>
+                        <option>TELNET</option>
+                      </select>
+                    </td>
+                  </tr>
+              </table>
+            </div>
+          </div>
+        </form>
       </div>
     </div>
   </div>

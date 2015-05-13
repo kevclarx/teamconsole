@@ -17,10 +17,14 @@ app.config(function ($routeProvider) {
 app.controller('consoleController', ['$scope', '$log', '$http', function($scope, $log, $http) {
     
     $scope.currentUser = "";
+    $scope.editMode = false;
 
    $http.get('/api/nodes')
     .success(function(data) {
-        $scope.data = data;
+        $scope.data = [{"id":0,"parentid": -1,"name": "root", "desc":"", "notes":"", "consoles": [], "nodes": [] }];
+        data.forEach(function(node) {
+            addNode($scope.data[0], node);
+        });
     })
     .error(function(status) {
         $log.log(status);
@@ -54,6 +58,24 @@ app.controller('consoleController', ['$scope', '$log', '$http', function($scope,
         window.open(url);
       };
 
+    $scope.editItem = function() {
+        $scope.editMode = !$scope.editMode;
+    };
+
+    var addNode = function(root, node) {
+        if(!root.nodes) {
+            root.nodes = [];
+        }
+        if(root.id === node.parentid) { 
+            root.nodes.push(node);
+        } else {
+            root.nodes.forEach(function(child) {
+                addNode(child, node);
+            });
+        }
+    };
+
+
     
 }]);
 
@@ -62,3 +84,5 @@ app.controller('loginController', ['$scope', '$log', function($scope, $log) {
     $scope.name = 'login';
     
 }]);
+
+
