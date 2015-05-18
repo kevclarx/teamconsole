@@ -1,4 +1,4 @@
-var app = angular.module('tcApp', ['ngRoute', 'ui.tree']);
+var app = angular.module('tcApp', ['ngRoute', 'ui.tree', 'ui.bootstrap']);
 
 app.config(function ($routeProvider) {
     
@@ -14,10 +14,10 @@ app.config(function ($routeProvider) {
     
 }); 
 
-app.controller('consoleController', ['$scope', '$log', '$http', function($scope, $log, $http) {
+app.controller('consoleController', ['$scope', '$log', '$http', '$modal', function($scope, $log, $http, $modal) {
     
-    $scope.currentUser = "";
-    $scope.editMode = false;
+   $scope.currentUser = "";
+   $scope.editMode = false;
 
    $http.get('/api/nodes')
     .success(function(data) {
@@ -49,18 +49,15 @@ app.controller('consoleController', ['$scope', '$log', '$http', function($scope,
         });
       };
 
-      $scope.setCurrent = function(node){
+      $scope.setCurrentNode = function(node){
         $scope.currentNode = node;
       };
 
-      $scope.sshclient = function() {
-        var url = "chrome-extension://pnhechapfaindjhompbnflcldabbghjo/html/nassh.html#" + $scope.currentUser + "@" + $scope.currentNode.ipaddress;
+
+    var sshclient = function(console, user) {
+        var url = "chrome-extension://pnhechapfaindjhompbnflcldabbghjo/html/nassh.html#" + user + "@" + console.ipaddress + ":" + console.port;
         window.open(url);
       };
-
-    $scope.editItem = function() {
-        $scope.editMode = !$scope.editMode;
-    };
 
     var addNode = function(root, node) {
         if(!root.nodes) {
@@ -75,7 +72,44 @@ app.controller('consoleController', ['$scope', '$log', '$http', function($scope,
         }
     };
 
+    $scope.addConsole = function(scope) {
+        $scope.editMode = true;
+        $scope.currentNode.consoles.push({name:"", ipaddress:"", type: "0", port: "22"});
+    };
 
+    $scope.removeConsole = function(console) {
+        $scope.currentNode.consoles.splice($scope.currentNode.consoles.indexOf(console), 1);
+    };
+
+    $scope.openConsole = function (size, console) {
+        if($scope.editMode) {
+            return;
+        }
+
+        if(console.type == 0) {
+
+            var modalInstance = $modal.open({
+                animation: true,
+                templateUrl: 'SSHModal.html',
+                controller: 'ModalInstanceCtrl',
+                size: size,
+                resolve: {
+                    user: function () {
+                        return $scope.currentUser;
+                    }
+                }
+            });
+
+            modalInstance.result.then(function (user) {
+                $scope.currentUser = user;
+                sshclient(console, user);
+            }, function () {
+                //$log.info('Modal dismissed at: ' + new Date());
+            });
+        } else {     
+            window.open(console.ipaddress + ":" + console.port);
+        }
+    };
     
 }]);
 
@@ -84,5 +118,19 @@ app.controller('loginController', ['$scope', '$log', function($scope, $log) {
     $scope.name = 'login';
     
 }]);
+
+app.controller('ModalInstanceCtrl', function ($scope, $modalInstance, user) {
+
+  $scope.user = user;
+  
+
+  $scope.ok = function () {
+    $modalInstance.close($scope.user);
+  };
+
+  $scope.cancel = function () {
+    $modalInstance.dismiss('cancel');
+  };
+});
 
 

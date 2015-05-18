@@ -6,7 +6,7 @@
             ng-class="{'glyphicon-chevron-right': collapsed, 'glyphicon-chevron-down': !collapsed}">
       </span>
     </a>
-    <a href="" ng-click="setCurrent(node)">{{node.name}}</a>
+    <a ng-click="setCurrentNode(node)">{{node.name}}</a>
     <a class="pull-right btn btn-danger btn-xs" nodrag ng-click="remove(this)" ng-if="node.id !== 0"><span
         class="glyphicon glyphicon-remove"></span></a>
     <a class="pull-right btn btn-primary btn-xs" nodrag ng-click="newSubItem(this)" style="margin-right: 8px;"><span
@@ -19,7 +19,7 @@
 </script>
 
 <div class="row">
-  <div class="col-sm-6">
+  <div class="col-sm-5">
     <div class="panel panel-default">
       <div class="panel-heading">
         <h3 class="panel-title">Devices</h3>
@@ -34,45 +34,73 @@
     </div>
   </div>
    
-  <div class="col-sm-6">
+  <div class="col-sm-7">
     <div class="panel panel-default">
       <div class="panel-heading">
         <h3 class="panel-title">Details</h3>
       </div>
       <div class="panel-body" ng-show="currentNode">
-        <a class="pull-right btn btn-primary btn-xs" ng-click="editItem()" style="margin-right: 8px;"> 
+        <a class="pull-right btn btn-primary btn-xs" ng-click="editMode = !editMode" style="margin-right: 8px;"> 
           <span class="glyphicon glyphicon-pencil"></span>
         </a>
          <form class="form-horizontal">
           <div class="form-group">
-            <label for="name" class="col-sm-2 control-label">Name</label>
+            <label for="name" class="col-sm-3 control-label">Name</label>
             <div class="col-sm-5">
-              <input type="text" class="form-control" id="name" placeholder="Name" name="name" value="{{currentNode.name}}">
+              <input type="text" class="form-control" ng-model="currentNode.name" ng-disabled="!editMode" id="name" placeholder="Name" value="{{currentNode.name}}">
             </div>
           </div>
           <div class="form-group">
-            <label for="desc" class="col-sm-2 control-label">Description</label>
+            <label for="desc" class="col-sm-3 control-label">Description</label>
             <div class="col-sm-5">
-              <textarea class="form-control">{{currentNode.desc}}</textarea>
+              <textarea class="form-control" ng-model="currentNode.desc" ng-disabled="!editMode" id="desc"> {{currentNode.desc}}</textarea>
+
             </div>
           </div>
           <div class="form-group">
-            <label for="notes" class="col-sm-2 control-label">Notes</label>
+            <label for="notes" class="col-sm-3 control-label">Notes</label>
             <div class="col-sm-5">
-              <textarea class="form-control">{{currentNode.notes}}</textarea>
+              <textarea class="form-control" ng-model="currentNode.notes" ng-disabled="!editMode">{{currentNode.notes}}</textarea>
             </div>
           </div>
-          <div class="panel panel-default">
-            <div class="panel-heading">Consoles</div>
+          <div class="panel panel-default" ng-model="currentNode">
+            <div class="panel-heading">Consoles
+              <a class="pull-right btn btn-primary btn-xs" nodrag ng-click="addConsole(this)" style="margin-right: 8px;">
+                <span class="glyphicon glyphicon-plus"></span>
+              </a>
+            </div>
               <table class="table">
-                <th>Name</th><th><span>IP/Hostname</span></th><th>Type</th>
+                <th class="col-md-2">Name</th><th class="col-md-4"><span>IP/Hostname</span></th><th class="col-md-3">Type</th><th class="col-md-2">Port</th><th class="col-md-1"></th>
                   <tr ng-repeat="console in currentNode.consoles">
-                    <td> {{ console.name }} </td><td> <span class="glyphicon glyphicon-console">{{ console.ipaddress }}</span></td>
-                    <td><select class="form-control">
-                        <option>SSH</option>
-                        <option>HTTP</option>
-                        <option>TELNET</option>
-                      </select>
+                    <td>
+                        <input type="text" class="form-control" ng-model="console.name" ng-disabled="!editMode" id="name" value="{{console.name}}">
+                    </td>
+                    <td>
+                      <div ng-click="openConsole('sm',console)">
+                        <div class="input-group">
+                            <span class="input-group-addon">
+                                <span class="glyphicon glyphicon-console" ng-show='console.type.toString() === "0"'></span>
+                                <span class="glyphicon glyphicon-globe" ng-show='console.type.toString() === "1"'></span>
+                            </span>
+                            <input type="text" class="form-control" ng-model="console.ipaddress" ng-disabled="!editMode" id="ipaddress" value="{{console.ipaddress}}">
+                        </div>
+                      </div>
+                    </td>
+                    <td>
+                      <div>
+                        <select class="form-control" ng-model="console.type" ng-disabled="!editMode">
+                          <option value="0">SSH</option>
+                          <option value="1">HTTP</option>
+                        </select>
+                      </div>
+                    </td>
+                    <td> 
+                      <input type="text" class="form-control" ng-model="console.port" ng-disabled="!editMode" value="{{console.port}}">
+                    </td>
+                    <td>
+                      <a class="pull-right btn btn-danger btn-xs" nodrag ng-click="removeConsole(console)" ng-show="editMode">
+                        <span class="glyphicon glyphicon-remove"></span>
+                      </a>
                     </td>
                   </tr>
               </table>
@@ -83,3 +111,24 @@
     </div>
   </div>
 </div>
+
+<script type="text/ng-template" id="SSHModal.html">
+        <div class="modal-header">
+            <h3 class="modal-title">SSH Username</h3>
+        </div>
+        <div class="modal-body">
+          <form class="form-horizontal">
+            <div class="form-group">
+              <label for="user" class="col-sm-3 control-label">username</label>
+                <div class="col-sm-5">
+                  <input type="text" class="form-control" id="user" ng-model="user" value="{{currentUser}}">
+                </div>
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-primary" ng-click="ok()">OK</button>
+            <button class="btn btn-warning" ng-click="cancel()">Cancel</button>
+        </div>
+</script>
+
