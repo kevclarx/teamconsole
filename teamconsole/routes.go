@@ -16,8 +16,8 @@ type Routes []Route
 var routes = Routes{
 	Route{
 		"NodeCreate",
-		"POST",
-		"/api/nodes",
+		"PUT",
+		"/api/node",
 		Create,
 	},
 	Route{

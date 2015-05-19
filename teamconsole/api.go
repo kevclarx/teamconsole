@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"strconv"
 
@@ -9,28 +10,70 @@ import (
 )
 
 func Create(w http.ResponseWriter, r *http.Request) {
-	/*	node := &Node{}
-		node.Name = r.FormValue("name")
-		node.Ipaddress = r.FormValue("ipaddress")
-		node.Id = nodelist.nextid
-		nodelist.nextid++
-		nodelist.nodes = append(nodelist.nodes, node)
+	decoder := json.NewDecoder(r.Body)
+	node := &Node{}
 
-		// Write it out to disk
-		if err := nodelist.WriteFile(); err != nil {
-			panic(err)
-		}
+	err := decoder.Decode(&node)
+	if err != nil {
+		fmt.Fprintf(w, err.Error())
+		w.WriteHeader(422)
+		return
+	}
 
-		w.Header().Set("Content-Type", "application/json; charset=UTF-8")
-		w.WriteHeader(http.StatusCreated)
-		if err := json.NewEncoder(w).Encode(&node); err != nil {
-			panic(err)
-		} */
+	node.Id = nodelist.nextid
+	nodelist.nextid++
+	nodelist.nodes = append(nodelist.nodes, node)
+
+	// Write it out to disk
+	if err := nodelist.WriteFile(); err != nil {
+		panic(err)
+	}
+
+	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+	w.WriteHeader(http.StatusCreated)
+	if err := json.NewEncoder(w).Encode(&node); err != nil {
+		panic(err)
+	}
+
 }
 
 func Update(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+	var nodeid int64
+	var err error
 
+	muxvars := mux.Vars(r)
+	if val, ok := muxvars["id"]; ok {
+		nodeid, err = strconv.ParseInt(val, 10, 64)
+		if err != nil {
+			// id var is present but not a number
+			w.WriteHeader(422) // unprocessable return code
+			return
+		}
+	}
+
+	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+	decoder := json.NewDecoder(r.Body)
+	node := &Node{}
+	err = decoder.Decode(&node)
+	if err != nil {
+		w.WriteHeader(422) // unprocessable return code
+		fmt.Fprintf(w, err.Error())
+		return
+	}
+
+	//Update node data
+	for i, cur := range nodelist.nodes {
+		if cur.Id == nodeid {
+			nodelist.nodes[i] = node
+			break
+		}
+	}
+
+	// Write it out to disk
+	if err = nodelist.WriteFile(); err != nil {
+		panic(err)
+	}
+	w.WriteHeader(http.StatusOK)
 }
 
 func Delete(w http.ResponseWriter, r *http.Request) {
