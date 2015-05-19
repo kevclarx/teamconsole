@@ -6,10 +6,10 @@
             ng-class="{'glyphicon-chevron-right': collapsed, 'glyphicon-chevron-down': !collapsed}">
       </span>
     </a>
-    <a ng-click="setCurrentNode(node)">{{node.name}}</a>
-    <a class="pull-right btn btn-danger btn-xs" nodrag ng-click="remove(this)" ng-if="node.id !== 0"><span
+    <a ng-click="setCurrentNode(node)" role="button">{{node.name}}</a>
+    <a class="pull-right btn btn-danger btn-xs" nodrag ng-click="nodeDelete(this)" ng-if="node.id !== 0" role="button"><span
         class="glyphicon glyphicon-remove"></span></a>
-    <a class="pull-right btn btn-primary btn-xs" nodrag ng-click="newSubItem(this)" style="margin-right: 8px;"><span
+    <a class="pull-right btn btn-primary btn-xs" nodrag ng-click="nodeCreate(this)" style="margin-right: 8px;" role="button"><span
         class="glyphicon glyphicon-plus"></span></a>
   </div>
   <ol ui-tree-nodes="" ng-model="node.nodes" ng-class="{hidden: collapsed}" data-nodrag>
@@ -37,10 +37,13 @@
   <div class="col-sm-7">
     <div class="panel panel-default">
       <div class="panel-heading">
-        <h3 class="panel-title">Details</h3>
+        <h3 class="panel-title">Details
+        <button class="pull-right btn btn-danger btn-xs" nodrag ng-click="undoChanges()" style="margin-right: 8px;" ng-show="editMode">Cancel</button>
+          <button class="pull-right btn btn-success btn-xs" nodrag ng-click="saveChanges()" style="margin-right: 8px;" ng-show="editMode">Save</button>
+        </h3>
       </div>
-      <div class="panel-body" ng-show="currentNode">
-        <a class="pull-right btn btn-primary btn-xs" ng-click="editMode = !editMode" style="margin-right: 8px;"> 
+      <div class="panel-body" ng-show="currentNode.hasOwnProperty('id')">
+        <a class="pull-right btn btn-primary btn-xs" ng-show="!editMode" ng-click="copyNode(); editMode = true;" style="margin-right: 8px;"> 
           <span class="glyphicon glyphicon-pencil"></span>
         </a>
          <form class="form-horizontal">
@@ -76,26 +79,27 @@
                         <input type="text" class="form-control" ng-model="console.name" ng-disabled="!editMode" id="name" value="{{console.name}}">
                     </td>
                     <td>
-                      <div ng-click="openConsole('sm',console)">
+                      <div>
                         <div class="input-group">
                             <span class="input-group-addon">
                                 <span class="glyphicon glyphicon-console" ng-show='console.type.toString() === "0"'></span>
                                 <span class="glyphicon glyphicon-globe" ng-show='console.type.toString() === "1"'></span>
                             </span>
-                            <input type="text" class="form-control" ng-model="console.ipaddress" ng-disabled="!editMode" id="ipaddress" value="{{console.ipaddress}}">
+                            <input type="text" class="form-control" ng-model="console.ipaddress" ng-if="editMode" id="ipaddress" value="{{console.ipaddress}}">
+                            <button ng-if="!editMode" class="btn btn-success" ng-click="openConsole('sm',console)">{{console.ipaddress}}</button>
                         </div>
                       </div>
                     </td>
                     <td>
                       <div>
                         <select class="form-control" ng-model="console.type" ng-disabled="!editMode">
-                          <option value="0">SSH</option>
-                          <option value="1">HTTP</option>
+                          <option type="number" value=0>SSH</option>
+                          <option type="number" value=1>HTTP</option>
                         </select>
                       </div>
                     </td>
                     <td> 
-                      <input type="text" class="form-control" ng-model="console.port" ng-disabled="!editMode" value="{{console.port}}">
+                      <input type="number" class="form-control" ng-model="console.port" ng-disabled="!editMode" value="{{console.port}}">
                     </td>
                     <td>
                       <a class="pull-right btn btn-danger btn-xs" nodrag ng-click="removeConsole(console)" ng-show="editMode">

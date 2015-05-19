@@ -16,50 +16,101 @@ app.config(function ($routeProvider) {
 
 app.controller('consoleController', ['$scope', '$log', '$http', '$modal', function($scope, $log, $http, $modal) {
     
-   $scope.currentUser = "";
-   $scope.editMode = false;
+    $scope.currentUser = "";
+    $scope.editMode = false;
+    $scope.currentNodeCopy = {};
 
-   $http.get('/api/nodes')
-    .success(function(data) {
-        $scope.data = [{"id":0,"parentid": -1,"name": "root", "desc":"", "notes":"", "consoles": [], "nodes": [] }];
-        data.forEach(function(node) {
-            addNode($scope.data[0], node);
+    var nodeListAll = function() {
+        $http.get('/api/nodes')
+        .success(function(data, status, headers, config) {
+            $scope.data = [{"id":0,"parentid": -1,"name": "root", "desc":"", "notes":"", "consoles": [], "nodes": [] }];
+            data.forEach(function(node) {
+                addNode($scope.data[0], node);
+            });
+        })
+        .error(function(data, status, headers, config) {
+            $log.log(status);
+        }); 
+    };
+
+    var nodeUpdate = function() {
+        $scope.currentNode.consoles.forEach(function(console) {
+            console.port = parseInt(console.port);
+            console.type = parseInt(console.type);
         });
-    })
-    .error(function(status) {
-        $log.log(status);
-    }); 
 
-     $scope.toggle = function(scope) {
-        alert("scope triggered");
-        scope.toggle();
-      };
+        $http.post('/api/nodes/' + $scope.currentNode.id, $scope.currentNode)
+        .success(function(data, status, headers, config) {
+            // placeholder
+        })
+        .error(function(data, status, headers, config) {
+            $log.log(status);
+            $log.log(data);
+        }); 
+    };
 
-
-    $scope.remove = function(scope) {
-        scope.remove();
-      };
-
-      $scope.newSubItem = function(scope) {
+    $scope.nodeCreate = function(scope) {
         var nodeData = scope.$modelValue;
-        nodeData.nodes.push({
-          id: nodeData.id * 10 + nodeData.nodes.length,
-          name: nodeData.name + '.' + (nodeData.nodes.length + 1),
-          nodes: []
-        });
-      };
 
-      $scope.setCurrentNode = function(node){
+        var node = {
+            name: "blank",
+            id: 0,
+            parentid: nodeData.id,
+            desc: "",
+            consoles: []
+        };
+
+        $http.put('/api/node/', node)
+        .success(function(data, status, headers, config) {
+            node = data;
+            scope.expand();
+            addNode(nodeData,node);
+            $scope.currentNode = node;
+            $scope.editMode = true;
+        })
+        .error(function(data, status, headers, config) {
+            $log.log(status);
+        }); 
+    };
+
+    $scope.nodeDelete = function(scope) {
+        var node = scope.$modelValue;
+
+        // safeguard against someone deleting large number of objects under a tree
+        if(node.hasOwnProperty("nodes")) {
+            if(node.nodes.length > 0) {
+                return;
+            }
+        }
+
+        $http.delete('/api/nodes/' + node.id)
+        .success(function(data) {
+            scope.remove();
+            $scope.currentNode = {};
+        })
+        .error(function(status) {
+            $log.log(status);
+        }); 
+    };
+
+    // Grab all the node data on start
+    nodeListAll();
+
+    $scope.setCurrentNode = function(node){
+        if($scope.editMode) {
+            console.log("undoing changes");
+            $scope.undoChanges();
+        }
         $scope.currentNode = node;
-      };
+    };
 
 
-    var sshclient = function(console, user) {
+    sshclient = function(console, user) {
         var url = "chrome-extension://pnhechapfaindjhompbnflcldabbghjo/html/nassh.html#" + user + "@" + console.ipaddress + ":" + console.port;
         window.open(url);
-      };
+    };
 
-    var addNode = function(root, node) {
+    addNode = function(root, node) {
         if(!root.nodes) {
             root.nodes = [];
         }
@@ -72,13 +123,34 @@ app.controller('consoleController', ['$scope', '$log', '$http', '$modal', functi
         }
     };
 
+    // Copy snapshot of current node but only if copy does not already exist
+    $scope.copyNode = function() {
+        if(Object.keys($scope.currentNodeCopy).length === 0) {
+            nodecopy($scope.currentNode, $scope.currentNodeCopy);
+        }
+    };
+
     $scope.addConsole = function(scope) {
         $scope.editMode = true;
-        $scope.currentNode.consoles.push({name:"", ipaddress:"", type: "0", port: "22"});
+        $scope.copyNode();
+        $scope.currentNode.consoles.push({name:"", ipaddress:"", type: 0, port: 22});
     };
 
     $scope.removeConsole = function(console) {
         $scope.currentNode.consoles.splice($scope.currentNode.consoles.indexOf(console), 1);
+    };
+
+    $scope.undoChanges = function() {
+        // revert back to object copy we took before changes
+        nodecopy($scope.currentNodeCopy,$scope.currentNode);
+        $scope.currentNodeCopy = {};
+        $scope.editMode = false;
+    };
+
+    $scope.saveChanges = function() {
+        $scope.currentNodeCopy = {};
+        nodeUpdate();
+        $scope.editMode = false;
     };
 
     $scope.openConsole = function (size, console) {
@@ -109,6 +181,26 @@ app.controller('consoleController', ['$scope', '$log', '$http', '$modal', functi
         } else {     
             window.open(console.ipaddress + ":" + console.port);
         }
+    };
+
+    nodecopy = function(src, dst) {
+        dst.id = src.id;
+        dst.parentid = src.parentid;
+        dst.name = src.name;
+        dst.desc = src.desc;
+        dst.notes = src.notes;
+
+        dst.consoles = [];
+
+        src.consoles.forEach(function(console) {
+            consoleCopy = {
+                name: console.name,
+                ipaddress: console.ipaddress,
+                type: console.type,
+                port: console.port
+            };
+            dst.consoles.push(consoleCopy);
+        });
     };
     
 }]);
