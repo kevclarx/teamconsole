@@ -1,0 +1,25 @@
+{
+  "name": "TeamConsole",
+  "version": "0.4",
+  "description": "A browser extension that syncs ssh and http bookmarks between team members using a private server.",
+  "permissions": [
+    "bookmarks",
+    "storage",
+    "management"
+  ],
+  "background": {
+    "scripts": ["background.js"]
+  },
+  "options_ui": {
+    "page": "options.html",
+    "chrome_style": true
+  },
+  "options_page": "options.html",
+  "browser_action": {
+      "default_title": "TeamConsole",
+      "default_icon": "icon-disconnected.png",
+      "default_popup": "popup.html"
+  },
+  "manifest_version": 2,
+  "content_security_policy": "script-src 'self' https://ajax.googleapis.com; object-src 'self'"
+}
