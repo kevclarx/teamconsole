@@ -12,55 +12,51 @@ type CType int64
 const (
 	SSH CType = iota
 	HTTP
-	TELNET
 )
 
-type Node struct {
-	Id       int64      `json:"id"`
-	ParentId int64      `json:"parentid"`
-	Name     string     `json:"name"`
-	Desc     string     `json:"desc"`
-	Notes    string     `json:"notes"`
-	Consoles []*Console `json:"consoles"`
-	m        sync.Mutex
+type BookmarkTreeNodeUnmodifiable string
+
+const (
+	// The managed value indicates that this node was configured by the system administrator or by the custodian of a supervised user.
+	// Omitted if the node can be modified by the user and the extension (default).
+	managed BookmarkTreeNodeUnmodifiable = "managed"
+)
+
+// Server side replication of Chrome's BookmarkTreeNode with addition of Console Type -
+// https://developer.chrome.com/extensions/bookmarks#type-BookmarkTreeNode
+type BookmarkTreeNode struct {
+	Id           int64                        `json:"id"`
+	ParentId     int64                        `json:"parentid"`     //The id of the parent folder. Omitted for the root node.
+	Index        int64                        `json:"index"`        // The 0-based position of this node within its parent folder.
+	Url          string                       `json:"url"`          // The URL navigated to when a user clicks the bookmark. Omitted for folders.
+	Title        string                       `json:"title"`        // The text displayed for the node.
+	Unmodifiable BookmarkTreeNodeUnmodifiable `json:"unmodifiable"` // Indicates the reason why this node is unmodifiable.
+	Children     []*BookmarkTreeNode          `json:"children"`     // An ordered list of children of this node.
+	ConsoleType  CType                        `json:"ctype"`        // Type of console, either SSH or HTTP
+	m            sync.Mutex
 }
 
-type NodeList struct {
-	nodes    []*Node
-	filename string
-	nextid   int64
-	m        sync.Mutex
-}
-
-type Console struct {
-	Name        string `json:"name"`
-	Ipaddress   string `json:"ipaddress"`
-	ConsoleType CType  `json:"type"`
-	Port        int64  `json:"port"`
-}
-
-// Read nodes json file
-func (n *NodeList) ReadFile() error {
-	f, err := os.Open(n.filename)
+// Read Bookmarks json file
+func (n *BookmarkTreeNode) ReadFile() error {
+	f, err := os.Open(*bookmarksFile)
 	if err != nil {
 		return err
 	}
 	defer f.Close()
 
 	jsonDecoder := json.NewDecoder(f)
-	if err := jsonDecoder.Decode(&n.nodes); err != nil {
+	if err := jsonDecoder.Decode(&bookmarkTreeNode); err != nil {
 		return err
 	}
-	n.nextid = n.getMaxID() + 1
 
 	return nil
 }
 
-// Return max id of all nodes in nodelist
-func (n *NodeList) getMaxID() int64 {
+// Return max id of all nodes in BookmarkTree
+func (n *BookmarkTreeNode) getMaxID() int64 {
 	var maxID int64
 
-	for _, node := range n.nodes {
+	for _, node := range n.getTree() {
 		if node.Id > maxID {
 			maxID = node.Id
 		}
@@ -68,17 +64,45 @@ func (n *NodeList) getMaxID() int64 {
 	return maxID
 }
 
-// Write nodes out to disk
-func (n *NodeList) WriteFile() error {
-	f, err := os.Create(n.filename)
+// Write bookmarks out to disk
+func (n *BookmarkTreeNode) WriteFile() error {
+	f, err := os.Create(*bookmarksFile)
 	if err != nil {
 		return err
 	}
 	defer f.Close()
 
 	jsonEncoder := json.NewEncoder(f)
-	if err := jsonEncoder.Encode(&n.nodes); err != nil {
+	if err := jsonEncoder.Encode(&bookmarkTreeNode); err != nil {
 		return err
 	}
 	return nil
+}
+
+func (n *BookmarkTreeNode) getTree() []*BookmarkTreeNode {
+	var nodes []*BookmarkTreeNode
+
+	for _, node := range n.Children {
+
+	}
+
+	return nodes
+}
+
+// Create fresh BookmarkNode Tree from scratch
+func (n *BookmarkTreeNode) CreateNewTree() {
+	n.Id = 0
+	n.Title = "TeamConsole"
+	n.Children = []*BookmarkTreeNode{
+		{
+			Id:       1,
+			Title:    "SSH",
+			ParentId: 0,
+		},
+		{
+			Id:       2,
+			Title:    "HTTP",
+			ParentId: 0,
+		},
+	}
 }

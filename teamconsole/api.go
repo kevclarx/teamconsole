@@ -1,15 +1,35 @@
 package main
 
 import (
-	"encoding/json"
+	//	"encoding/json"
 	"fmt"
-	"net/http"
-	"strconv"
-
-	"github.com/gorilla/mux"
+	"golang.org/x/net/websocket"
+	"os"
+	//	"net/http"
+	//	"strconv"
 )
 
-func Create(w http.ResponseWriter, r *http.Request) {
+func Login(ws *websocket.Conn, wsreq WSReq) bool {
+	wsrep := LoginReply{Type: "login", Code: 200}
+	err := websocket.JSON.Send(ws, wsrep)
+	if err != nil {
+		fmt.Printf("Couldn't send login reply:%s\n", err.Error())
+		os.Exit(1)
+	}
+	return true
+}
+
+func List(ws *websocket.Conn, wsreq WSReq) {
+	wsrep := LoginReply{Type: "list", Code: 200}
+	err := websocket.JSON.Send(ws, wsrep)
+	if err != nil {
+		fmt.Printf("Couldn't send login reply:%s\n", err.Error())
+		os.Exit(1)
+	}
+}
+
+/*
+func Create(ws *websocket.Conn) {
 	decoder := json.NewDecoder(r.Body)
 	node := &Node{}
 
@@ -144,3 +164,4 @@ func List(w http.ResponseWriter, r *http.Request) {
 		panic(err)
 	}
 }
+*/

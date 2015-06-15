@@ -1,26 +1,50 @@
 package main
 
 import (
-	"net/http"
-
-	"github.com/gorilla/mux"
+	"fmt"
+	"golang.org/x/net/websocket"
+	"os"
 )
 
-func NewRouter() *mux.Router {
-	router := mux.NewRouter().StrictSlash(true)
+type WSReq struct {
+	Type    string `json:"type"`
+	Request string `json:"request"`
+}
 
-	// Load all our REST endpoint routes from routes.go
-	for _, route := range routes {
-		var handler http.Handler
-		handler = route.HandlerFunc
-		handler = RequestLogger(handler, route.Name)
+type LoginReply struct {
+	Type string `json:"type"`
+	Code int64  `json:"code"`
+}
 
-		router.
-			Methods(route.Method).
-			Path(route.Pattern).
-			Name(route.Name).
-			Handler(handler)
+func AuthError(ws *websocket.Conn) {
+	wsrep := LoginReply{Type: "login", Code: 401}
+	err := websocket.JSON.Send(ws, wsrep)
+	if err != nil {
+		fmt.Printf("Couldn't send login unauthorized reply:%s\n", err.Error())
+		os.Exit(1)
 	}
-	router.PathPrefix("/").Handler(http.FileServer(http.Dir("../html")))
-	return router
+}
+
+func WSHandler(ws *websocket.Conn) {
+	defer ws.Close()
+	var authenticated = false
+
+	for {
+		var wsreq WSReq
+		err := websocket.JSON.Receive(ws, &wsreq)
+		if err != nil {
+			// fmt.Printf("Error receiving message:%s\n", err.Error())
+			break
+		}
+		if wsreq.Type != "login" && !authenticated {
+			AuthError(ws)
+			break
+		}
+		switch wsreq.Type {
+		case "login":
+			authenticated = Login(ws, wsreq)
+		case "list":
+			List(ws, wsreq)
+		}
+	}
 }
