@@ -16,6 +16,11 @@ type LoginReply struct {
 	Code int64  `json:"code"`
 }
 
+type ListReply struct {
+	Type  string `json:"type"`
+	Nodes []*BookmarkTreeNode
+}
+
 func AuthError(ws *websocket.Conn) {
 	wsrep := LoginReply{Type: "login", Code: 401}
 	err := websocket.JSON.Send(ws, wsrep)

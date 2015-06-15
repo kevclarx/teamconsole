@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"os"
+	"strconv"
 	"sync"
 )
 
@@ -25,14 +26,14 @@ const (
 // Server side replication of Chrome's BookmarkTreeNode with addition of Console Type -
 // https://developer.chrome.com/extensions/bookmarks#type-BookmarkTreeNode
 type BookmarkTreeNode struct {
-	Id           int64                        `json:"id"`
-	ParentId     int64                        `json:"parentid"`     //The id of the parent folder. Omitted for the root node.
+	Id           string                       `json:"id"`
+	ParentId     string                       `json:"parentid"`     //The id of the parent folder. Omitted for the root node.
 	Index        int64                        `json:"index"`        // The 0-based position of this node within its parent folder.
 	Url          string                       `json:"url"`          // The URL navigated to when a user clicks the bookmark. Omitted for folders.
 	Title        string                       `json:"title"`        // The text displayed for the node.
 	Unmodifiable BookmarkTreeNodeUnmodifiable `json:"unmodifiable"` // Indicates the reason why this node is unmodifiable.
-	Children     []*BookmarkTreeNode          `json:"children"`     // An ordered list of children of this node.
 	ConsoleType  CType                        `json:"ctype"`        // Type of console, either SSH or HTTP
+	Children     []*BookmarkTreeNode          `json:"children"`     // An ordered list of children of this node.
 	m            sync.Mutex
 }
 
@@ -53,12 +54,13 @@ func (n *BookmarkTreeNode) ReadFile() error {
 }
 
 // Return max id of all nodes in BookmarkTree
-func (n *BookmarkTreeNode) getMaxID() int64 {
-	var maxID int64
+func (n *BookmarkTreeNode) getMaxID() int {
+	var maxID int
 
 	for _, node := range n.getTree() {
-		if node.Id > maxID {
-			maxID = node.Id
+		nodeid, _ := strconv.Atoi(node.Id)
+		if nodeid > maxID {
+			maxID = nodeid
 		}
 	}
 	return maxID
@@ -79,30 +81,39 @@ func (n *BookmarkTreeNode) WriteFile() error {
 	return nil
 }
 
+// Return array of all bookmark nodes including root
 func (n *BookmarkTreeNode) getTree() []*BookmarkTreeNode {
-	var nodes []*BookmarkTreeNode
+	nodes := []*BookmarkTreeNode{}
 
-	for _, node := range n.Children {
-
+	if n.Id == "0" {
+		nodes = append(nodes, n)
 	}
 
+	for _, node := range n.Children {
+		nodes = append(nodes, node)
+		node.getTree()
+	}
 	return nodes
 }
 
 // Create fresh BookmarkNode Tree from scratch
-func (n *BookmarkTreeNode) CreateNewTree() {
-	n.Id = 0
+func (n *BookmarkTreeNode) CreateTree() {
+	n.Id = "0"
 	n.Title = "TeamConsole"
+	n.Unmodifiable = managed
+
 	n.Children = []*BookmarkTreeNode{
 		{
-			Id:       1,
-			Title:    "SSH",
-			ParentId: 0,
+			Id:           "1",
+			Title:        "SSH",
+			ParentId:     "0",
+			Unmodifiable: managed,
 		},
 		{
-			Id:       2,
-			Title:    "HTTP",
-			ParentId: 0,
+			Id:           "2",
+			Title:        "HTTP",
+			ParentId:     "0",
+			Unmodifiable: managed,
 		},
 	}
 }

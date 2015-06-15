@@ -20,7 +20,7 @@ func Login(ws *websocket.Conn, wsreq WSReq) bool {
 }
 
 func List(ws *websocket.Conn, wsreq WSReq) {
-	wsrep := LoginReply{Type: "list", Code: 200}
+	wsrep := ListReply{Type: "list", Nodes: bookmarkTreeNode.getTree()}
 	err := websocket.JSON.Send(ws, wsrep)
 	if err != nil {
 		fmt.Printf("Couldn't send login reply:%s\n", err.Error())
