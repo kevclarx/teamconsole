@@ -1,8 +1,8 @@
 function displayStatus() {
-    var connStatus = background.teamconsole.getStatus();
+    var connStatus = background.teamconsole.networkManager.status;
     var statusdiv = document.getElementById('connstatus');
     statusdiv.innerHTML = '<b>Connection status: ' + connStatus + "</b><br>Server:" +
-        background.teamconsole.settings.server + ':' + background.teamconsole.settings.port + '<br>';
+        background.teamconsole.extensionManager.server + ':' + background.teamconsole.extensionManager.port + '<br>';
 
     if(connStatus !== 'connected') {
         statusdiv.className = 'alert alert-danger';

@@ -1,14 +1,19 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"golang.org/x/net/websocket"
 	"os"
 )
 
-type WSReq struct {
-	Type    string `json:"type"`
-	Request string `json:"request"`
+type WSMessage struct {
+	Type string          `json:"type"`
+	Data json.RawMessage `json:"request"`
+}
+
+type LoginRequest struct {
+	Password string `json:"password"`
 }
 
 type LoginReply struct {
@@ -21,7 +26,7 @@ type ListReply struct {
 	Nodes []*BookmarkTreeNode
 }
 
-func AuthError(ws *websocket.Conn) {
+func AuthError(ws *websocket.Conn, msg WSMessage) {
 	wsrep := LoginReply{Type: "login", Code: 401}
 	err := websocket.JSON.Send(ws, wsrep)
 	if err != nil {
@@ -35,21 +40,24 @@ func WSHandler(ws *websocket.Conn) {
 	var authenticated = false
 
 	for {
-		var wsreq WSReq
-		err := websocket.JSON.Receive(ws, &wsreq)
+		var msg WSMessage
+		err := websocket.JSON.Receive(ws, &msg)
 		if err != nil {
 			// fmt.Printf("Error receiving message:%s\n", err.Error())
 			break
 		}
-		if wsreq.Type != "login" && !authenticated {
-			AuthError(ws)
+		if msg.Type != "login" && !authenticated {
+			AuthError(ws, msg)
 			break
 		}
-		switch wsreq.Type {
+		switch msg.Type {
+
 		case "login":
-			authenticated = Login(ws, wsreq)
+			authenticated = Login(ws, msg)
 		case "list":
-			List(ws, wsreq)
+			List(ws, msg)
+		case "update":
+			Update(ws, msg)
 		}
 	}
 }

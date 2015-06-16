@@ -1,7 +1,7 @@
 package main
 
 import (
-	//	"encoding/json"
+	"encoding/json"
 	"fmt"
 	"golang.org/x/net/websocket"
 	"os"
@@ -9,7 +9,7 @@ import (
 	//	"strconv"
 )
 
-func Login(ws *websocket.Conn, wsreq WSReq) bool {
+func Login(ws *websocket.Conn, msg WSMessage) bool {
 	wsrep := LoginReply{Type: "login", Code: 200}
 	err := websocket.JSON.Send(ws, wsrep)
 	if err != nil {
@@ -19,8 +19,9 @@ func Login(ws *websocket.Conn, wsreq WSReq) bool {
 	return true
 }
 
-func List(ws *websocket.Conn, wsreq WSReq) {
+func List(ws *websocket.Conn, msg WSMessage) {
 	wsrep := ListReply{Type: "list", Nodes: bookmarkTreeNode.getTree()}
+	fmt.Printf("sending list reply %v\n", wsrep)
 	err := websocket.JSON.Send(ws, wsrep)
 	if err != nil {
 		fmt.Printf("Couldn't send login reply:%s\n", err.Error())
@@ -28,7 +29,61 @@ func List(ws *websocket.Conn, wsreq WSReq) {
 	}
 }
 
+func Update(ws *websocket.Conn, msg WSMessage) {
+	updatedNode := &BookmarkTreeNode{}
+	err := json.Unmarshal(msg.Data, &updatedNode)
+	if err != nil {
+		fmt.Printf("update message decoder error: %s\n", err.Error())
+		return
+	}
+	fmt.Printf("Update node:%s Parent:%s", updatedNode.Title, updatedNode.ParentId)
+	//Update node data
+	for _, n := range bookmarkTreeNode.getTree() {
+		if n.Id == updatedNode.Id {
+			n.ParentId = updatedNode.ParentId
+			n.Index = updatedNode.Index
+			n.Title = updatedNode.Title
+			n.Url = updatedNode.Url
+			break
+		}
+	}
+
+	// Write it out to disk
+	if err = bookmarkTreeNode.WriteFile(); err != nil {
+		panic(err)
+	}
+}
+
 /*
+func Delete(w http.ResponseWriter, r *http.Request) {
+	var nodeid int64
+	var err error
+
+	muxvars := mux.Vars(r)
+	if val, ok := muxvars["id"]; ok {
+		nodeid, err = strconv.ParseInt(val, 10, 64)
+		if err != nil {
+			// id var is present but not a number
+			w.WriteHeader(422) // unprocessable return code
+			return
+		}
+	}
+
+	for i, n := range nodelist.nodes {
+		if nodeid == n.Id {
+			nodelist.nodes = append(nodelist.nodes[:i], nodelist.nodes[i+1:]...)
+			// Write it out to disk
+			if err := nodelist.WriteFile(); err != nil {
+				panic(err)
+			}
+			w.WriteHeader(http.StatusOK)
+			return
+		}
+	}
+	w.WriteHeader(http.StatusNotFound)
+}
+
+
 func Create(ws *websocket.Conn) {
 	decoder := json.NewDecoder(r.Body)
 	node := &Node{}
@@ -57,72 +112,7 @@ func Create(ws *websocket.Conn) {
 
 }
 
-func Update(w http.ResponseWriter, r *http.Request) {
-	var nodeid int64
-	var err error
 
-	muxvars := mux.Vars(r)
-	if val, ok := muxvars["id"]; ok {
-		nodeid, err = strconv.ParseInt(val, 10, 64)
-		if err != nil {
-			// id var is present but not a number
-			w.WriteHeader(422) // unprocessable return code
-			return
-		}
-	}
-
-	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
-	decoder := json.NewDecoder(r.Body)
-	node := &Node{}
-	err = decoder.Decode(&node)
-	if err != nil {
-		w.WriteHeader(422) // unprocessable return code
-		fmt.Fprintf(w, err.Error())
-		return
-	}
-
-	//Update node data
-	for i, cur := range nodelist.nodes {
-		if cur.Id == nodeid {
-			nodelist.nodes[i] = node
-			break
-		}
-	}
-
-	// Write it out to disk
-	if err = nodelist.WriteFile(); err != nil {
-		panic(err)
-	}
-	w.WriteHeader(http.StatusOK)
-}
-
-func Delete(w http.ResponseWriter, r *http.Request) {
-	var nodeid int64
-	var err error
-
-	muxvars := mux.Vars(r)
-	if val, ok := muxvars["id"]; ok {
-		nodeid, err = strconv.ParseInt(val, 10, 64)
-		if err != nil {
-			// id var is present but not a number
-			w.WriteHeader(422) // unprocessable return code
-			return
-		}
-	}
-
-	for i, n := range nodelist.nodes {
-		if nodeid == n.Id {
-			nodelist.nodes = append(nodelist.nodes[:i], nodelist.nodes[i+1:]...)
-			// Write it out to disk
-			if err := nodelist.WriteFile(); err != nil {
-				panic(err)
-			}
-			w.WriteHeader(http.StatusOK)
-			return
-		}
-	}
-	w.WriteHeader(http.StatusNotFound)
-}
 
 func List(w http.ResponseWriter, r *http.Request) {
 	var nodeid int64
