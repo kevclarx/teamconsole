@@ -1,5 +1,6 @@
-TeamConsole 
-written by: Kevin Clark kclark@tcpmutt.com
+TeamConsole
+----------- 
+Kevin Clark kclark@tcpmutt.com
 
 SUMMARY:
 --------
@@ -20,6 +21,7 @@ it is intended to manage bookmarks for internal devices all communication is str
 connections are made.
 
 TODO:
+-----
   - local storage of username preferences for each node
   - optimize initial data download on extension start so it doesn't have to download entire json structure
   - individual user based access and controls and permission structure
