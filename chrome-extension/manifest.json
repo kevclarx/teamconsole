@@ -17,7 +17,7 @@
   "options_page": "options.html",
   "browser_action": {
       "default_title": "TeamConsole",
-      "default_icon": "icon-disconnected.png",
+      "default_icon": "img/icon-disconnected.png",
       "default_popup": "popup.html"
   },
   "manifest_version": 2,

@@ -9,14 +9,10 @@ import (
 
 type WSMessage struct {
 	Type string          `json:"type"`
-	Data json.RawMessage `json:"request"`
+	Data json.RawMessage `json:"data"`
 }
 
-type LoginRequest struct {
-	Password string `json:"password"`
-}
-
-type LoginReply struct {
+type CodeReply struct {
 	Type string `json:"type"`
 	Code int64  `json:"code"`
 }
@@ -27,7 +23,7 @@ type ListReply struct {
 }
 
 func AuthError(ws *websocket.Conn, msg WSMessage) {
-	wsrep := LoginReply{Type: "login", Code: 401}
+	wsrep := CodeReply{Type: "login", Code: 401}
 	err := websocket.JSON.Send(ws, wsrep)
 	if err != nil {
 		fmt.Printf("Couldn't send login unauthorized reply:%s\n", err.Error())
@@ -38,12 +34,13 @@ func AuthError(ws *websocket.Conn, msg WSMessage) {
 func WSHandler(ws *websocket.Conn) {
 	defer ws.Close()
 	var authenticated = false
+	var msg WSMessage
 
 	for {
-		var msg WSMessage
 		err := websocket.JSON.Receive(ws, &msg)
 		if err != nil {
-			// fmt.Printf("Error receiving message:%s\n", err.Error())
+			// client most likely disconnected so break out of loop and close socket
+			//fmt.Printf("Error receiving message:%s\n", err.Error())
 			break
 		}
 		if msg.Type != "login" && !authenticated {
@@ -58,6 +55,10 @@ func WSHandler(ws *websocket.Conn) {
 			List(ws, msg)
 		case "update":
 			Update(ws, msg)
+		case "create":
+			Create(ws, msg)
+		case "delete":
+			Delete(ws, msg)
 		}
 	}
 }

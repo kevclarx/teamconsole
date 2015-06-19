@@ -3,54 +3,56 @@
  */
 
 // Main object in global scope
-var teamconsole = {};
+var teamconsole = (function() {
 
-// Extension setting manager
-teamconsole.extensionManager = (function() {
+    var settings = {
+        server: 'teamconsole.yourdomain.com',
+        port: 7329,
+        title: 'TeamConsole',
+        password: ''
+    };
 
-    var ExtensionManager = function () {
-        this.server = 'teamconsole.yourdomain.com';
-        this.port = 7329;
-        this.title = 'TeamConsole';
-        this.password = '';
+    // bookmarks list containing Bookmark objects
+    var bookmarks = [];
+
+    // Websocket connection properties
+    var connection = {
+        socket: null,
+        status: "disconnected",
+        paused: false
     };
 
     // Save basic connection info to chrome browser's local storage
-    ExtensionManager.prototype.saveOptions = function (done) {
+    var saveOptions = function (done) {
         chrome.storage.local.set({
-            server: this.server,
-            port: this.port,
-            password: this.password
+            server: settings.server,
+            port: settings.port,
+            password: settings.password
         }, function () {
             done();
         });
     };
 
     // Load basic connection info from chrome's local storage
-    ExtensionManager.prototype.loadOptions = function (done) {
+    var loadOptions = function (done) {
         chrome.storage.local.get(null, function (items) {
-            this.server = items.server || this.server;
-            this.port = items.port || this.port;
-            this.password = items.password || this.password;
+            settings.server = items.server || settings.server;
+            settings.port = items.port || settings.port;
+            settings.password = items.password || settings.password;
             done();
-        }.bind(this));
+        });
     };
 
     // Change browseraction tooltip and color when websocket status changes
-    ExtensionManager.prototype.setIcon = function (connected) {
+    var setIcon = function (connected) {
         if (connected) {
-            chrome.browserAction.setIcon({path: "icon-connected.png"});
+            chrome.browserAction.setIcon({path: "img/icon-connected.png"});
             chrome.browserAction.setTitle({title: "TeamConsole connected"});
         } else {
-            chrome.browserAction.setIcon({path: "icon-disconnected.png"});
+            chrome.browserAction.setIcon({path: "img/icon-disconnected.png"});
             chrome.browserAction.setTitle({title: "TeamConsole disconnected"})
         }
     };
-
-    return new ExtensionManager();
-})();
-
-teamconsole.bookmarkManager = (function() {
 
     // Bookmark object that contains both server and local client ids
     var Bookmark = function (bookmarkdata) {
@@ -63,44 +65,61 @@ teamconsole.bookmarkManager = (function() {
         this.url = bookmarkdata.url;                // url to open
     };
 
-    // Our bookmark manager object
-    var BookmarkManager = function () {
-        this.bookmarks = [];
-        this.addListeners();
-    };
-
     // Find first bookmark in bookmarks[] that has key matching value
-    BookmarkManager.prototype.findBookmark = function (key, value) {
-        for (var i = 0; i < this.bookmarks.length; i++) {
-            if (this.bookmarks[i][key] === value) {
-                return this.bookmarks[i];
+    var findBookmark = function (key, value) {
+        for (var i = 0; i < bookmarks.length; i++) {
+            if (bookmarks[i][key] === value) {
+                return bookmarks[i];
             }
         }
         return null;
     };
 
-    BookmarkManager.prototype.addBookmarks = function (nodes) {
+    // Takes array of all bookmarks and creates them in browser
+    var createBookmarks = function (nodes) {
+        bookmarks = [];
         for (var i = 0; i < nodes.length; i++) {
             // First we must populate our server data
-            this.bookmarks.push(new Bookmark({
+            bookmarks.push(new Bookmark({
                 title: nodes[i].title,
-                s_id: nodes[i].id,
+                s_id: nodes[i].s_id,
                 c_id: '',
-                s_parentId: nodes[i].parentId,
+                s_parentId: nodes[i].s_parentId,
                 c_parentId: '',
                 index: nodes[i].index,
                 url: nodes[i].url
             }));
         }
-        this.findOrCreateRootNode(function() { // find or create root node
-            this.createLocalNodes(function() {
-                console.log("Bookmark state synced.");
-            }.bind(this));
-        }.bind(this));
+        findOrCreateRootNode(function () { // find or create root node
+            for (var i = 1; i < bookmarks.length; i++) {
+                if (!bookmarks[i].c_id) { // indicates does not already exist so lets create it
+                    var parentNode = findBookmark("s_id", bookmarks[i].s_parentId);
+                    if (parentNode) {
+                        createBookmark(i, parentNode.c_id);
+                    } else {
+                        console.log("ERROR: can't find parent node for " + this.bookmarks[i].title);
+                    }
+                }
+            }
+            console.log("Bookmark state synced.");
+        });
+    };
+
+    // Create individual bookmark in chrome and record local id's in BookmarkManager
+    var createBookmark = function (i, parentId) {
+        chrome.bookmarks.create({
+            parentId: parentId,
+     //       index: bookmarks[i].index,
+            title: bookmarks[i].title,
+            url: bookmarks[i].url
+        }, function (result) {
+            bookmarks[i].c_id = result.id;
+            bookmarks[i].c_parentId = result.parentId;
+        });
     };
 
     // Find root bookmark or create if doesn't exist
-    BookmarkManager.prototype.findOrCreateRootNode = function(cb) {
+    var findOrCreateRootNode = function (cb) {
         // find our root
         chrome.bookmarks.search({title: 'TeamConsole'}, function (results) {
             if (results.length === 0) {
@@ -111,22 +130,22 @@ teamconsole.bookmarkManager = (function() {
                     },
                     function (newFolder) {
                         // update root node with local id's
-                        this.bookmarks[0].c_id = newFolder.id;
-                        this.bookmarks[0].c_parentId = newFolder.parentId;
-                        this.bookmarks[0].index = newFolder.index;
+                        bookmarks[0].c_id = newFolder.id;
+                        bookmarks[0].c_parentId = newFolder.parentId;
+                        bookmarks[0].index = newFolder.index;
                         cb();
-                     //   alert("No TeamConsole bookmark folder found so created new folder: " + newFolder.title);
-                    }.bind(this));
+                        //   alert("No TeamConsole bookmark folder found so created new folder: " + newFolder.title);
+                    });
             } else {
                 // found existing root folder
-                this.bookmarks[0].c_id = results[0].id;
-                this.bookmarks[0].c_parentId = results[0].parentId;
-                this.bookmarks[0].index = results[0].index;
+                bookmarks[0].c_id = results[0].id;
+                bookmarks[0].c_parentId = results[0].parentId;
+                bookmarks[0].index = results[0].index;
 
                 // remove all nodes underneath the root so we can rebuild
-                chrome.bookmarks.getChildren(results[0].id, function(childNode) {
-                    childNode.forEach(function(node) {
-                        chrome.bookmarks.removeTree(node.id, function() {
+                chrome.bookmarks.getChildren(results[0].id, function (childNode) {
+                    childNode.forEach(function (node) {
+                        chrome.bookmarks.removeTree(node.id, function () {
                             // removed
                         });
                     });
@@ -134,93 +153,70 @@ teamconsole.bookmarkManager = (function() {
 
                 cb();
             }
-        }.bind(this));
+        });
     };
 
-    // Create or update bookmarks in chrome if modified since last time
-    BookmarkManager.prototype.createLocalNodes = function (cb) {
-
-        for(var i = 1; i < this.bookmarks.length; i++) {
-            if (!this.bookmarks[i].c_id) { // indicates does not already exist so lets create it
-                var parentNode = this.findBookmark("s_id", this.bookmarks[i].s_parentId);
-                if (parentNode) {
-                    this.createBookmark(i, parentNode.c_id);
-                } else {
-                    console.log("ERROR: can't find parent node for " + this.bookmarks[i].title);
-                }
-            }
-        }
-        cb();
-    };
-
-    // Create individual bookmark in chrome and record local id's in BookmarkManager
-    BookmarkManager.prototype.createBookmark = function(index, parentId) {
-        chrome.bookmarks.create({
-            parentId: parentId,
-            index:  this.bookmarks[index].index,
-            title:  this.bookmarks[index].title,
-            url:    this.bookmarks[index].url
-        }, function (result) {
-            console.log(result);
-            this.bookmarks[index].c_id = result.id;
-            this.bookmarks[index].c_parentId = result.parentId;
-        }.bind(this));
-    };
-
-  /*  BookmarkManager.prototype.updateBookmarkNode = function(updatedBookmark) {
-        var bookmark = bookmarkList.findBookmark("c_id", updatedBookmark.id);
-        if(!bookmark) {
-            console.log("Could not find bookmark for client id:" + updatedBookmark.id);
-            return;
-        }
-        bookmark.c_parentId = updatedBookmark.parentId || bookmark.c_parentId;
-        bookmark.s_parentId = bookmarkList.findBookmark("c_parentId",updatedBookmark.parentId).s_id || bookmark.s_parentId;
-        bookmark.c_id = updatedBookmark.id || bookmark.c_id;
-        bookmark.title = updatedBookmark.title || bookmark.title;
-        bookmark.url = updatedBookmark.url || bookmark.url;
-        bookmark.index = updatedBookmark.index || bookmark.index;
-
+    var update = function (bookmark) {
         var msg = {
             type: "update",
-            id: bookmark.s_id,
-            parentId: bookmark.s_parentId,
-            title: bookmark.title,
-            url: bookmark.url,
-            index: bookmark.index
+            data: bookmark
         };
-        console.log(msg);
-        // Send the msg object as a JSON-formatted string.
-        socket.send(JSON.stringify(msg));
-    }; */
+
+        // Send the msg object to server
+        sendMessage(msg);
+    };
+
+    var remove = function(id) {
+
+    };
 
     // register all of Chrome's bookmark listeners to our object
-    BookmarkManager.prototype.addListeners = function () {
+    var addBookmarkListeners = function() {
+
         chrome.bookmarks.onCreated.addListener(function (id, bookmark) {
-            console.log("Bookmark created:" + bookmark.title);
-        }.bind(this));
+           // console.log("Bookmark created:" + bookmark.title);
+        });
 
         chrome.bookmarks.onRemoved.addListener(function (id, removeInfo) {
 
-        }.bind(this));
+
+        });
 
         chrome.bookmarks.onChanged.addListener(function (id, changeInfo) {
-
-        }.bind(this));
+            var bookmark = findBookmark("c_id", id);
+            if(bookmark) {
+                bookmark.title = changeInfo.title;
+                bookmark.url = changeInfo.url;
+                update(bookmark);
+            } else {
+                console.log("Could not find changed bookmark id:" + id);
+            }
+        });
 
         chrome.bookmarks.onChildrenReordered.addListener(function (id, reorderInfo) {
+            console.log("got reordered");
+            console.log(reorderInfo);
+        });
 
-        }.bind(this));
-
-    /*    chrome.bookmarks.onMoved.addListener(function (id, moveInfo) {
-            console.log("update message:" + id);
-            console.log(moveInfo);
+        chrome.bookmarks.onMoved.addListener(function (id, moveInfo) {
+            var bookmark = findBookmark("c_id", id);
             // first make sure this is one of our bookmarks
-            if (bookmarkList.findBookmark("c_id", id) !== null) {
-                // now make sure we are moving it within our tree and not outside unless it is root
-                if (bookmarkList.findBookmark("c_id", moveInfo.parentId) !== null || id === root.id) {
-                    moveInfo.id = id;
-                    updateBookmarkNode(moveInfo);
+            if (bookmark) {
+                // we don't need to update server if moving root node
+                if(bookmark.s_id === "0") {
+                    return;
+                }
+                // if just an index change ignore - buggy
+                if(moveInfo.oldParentId === moveInfo.parentId) {
+                    return;
+                }
+                // now make sure we are moving it within our tree
+                if (findBookmark("c_id", moveInfo.parentId)) {
+                    bookmark.s_parentId = findBookmark("c_id",moveInfo.parentId).s_id;
+                    bookmark.index = moveInfo.index;
+                    update(bookmark);
                 } else {
+                    // move it back to original position
                     chrome.bookmarks.move(id, {
                         parentId: moveInfo.oldParentId,
                         index: moveInfo.oldIndex
@@ -229,106 +225,115 @@ teamconsole.bookmarkManager = (function() {
                     });
                 }
             }
-        }.bind(this)); */
+        });
+
+
     }; // end listeners
 
-    return new BookmarkManager();
-})();
-
-teamconsole.networkManager = (function(bookmarkManager, extensionManager) {
-
-    // our 'private' variables
-    var socket,         // websocket
-        pauseconnection;// whether server updates are paused or not
-
-    // Websocket manager object
-    var NetworkManager = function () {
-        this.socket = null;
-        this.status = "disconnected";
+    var sendMessage = function (msg) {
+        // Send the msg object as a JSON-formatted string.
+        connection.socket.send(JSON.stringify(msg));
     };
 
-    // connect to websocket server and send login credentials
-    NetworkManager.prototype.connect = function () {
+    // Get list of all bookmarks from server
+    var list = function() {
+        var listrequest = {
+            type: "list",
+            data: ""
+        };
+        sendMessage(listrequest);
+    };
+
+    var connect = function () {
+
         // Create a new WebSocket, close existing one if it exists already
-        if (this.socket) {
-            this.socket.close();
+        if (connection.socket) {
+            connection.socket.close();
         }
-        extensionManager.loadOptions(function() {
-            this.socket = new WebSocket('ws://' + extensionManager.server + ':' + extensionManager.port);
-            this.addListeners();
-        }.bind(this));
-    };
-
-    NetworkManager.prototype.addListeners = function () {
+        connection.socket = new WebSocket('ws://' + settings.server + ':' + settings.port);
 
         // connection established
-        this.socket.onopen = function (event) {
-            extensionManager.setIcon(true); // Set icon when socket established
-            this.status = 'connected';
+        connection.socket.onopen = function (event) {
+            setIcon(true); // Set icon when socket established
+            connection.status = 'connected';
             var msg = {
                 type: "login",
-                request: extensionManager.password
+                data: settings.password
             };
             // Send the msg object as a JSON-formatted string.
-            this.socket.send(JSON.stringify(msg));
-        }.bind(this);
+            sendMessage(msg);
+        };
 
         // Handle messages sent by the server.
-        this.socket.onmessage = function (event) {
+        connection.socket.onmessage = function (event) {
             var msg = JSON.parse(event.data);
             switch (msg.type) {
-                case "hash":
-                    var hashes = msg.hashes;
-                    console.log(hashes);
-                    break;
                 case "login":
                     if (msg.code === 200) {
                         console.log("Login successful.");
-                        msg = {
-                            type: "list",
-                            request: "foo"
-                        };
-                        // Send the msg object as a JSON-formatted string.
-                        this.socket.send(JSON.stringify(msg));
-                    }
-                    else {
+                        list();
+                    } else {
                         console.log("Login failed:" + msg.code);
-                        pauseconnection = true;
-                        this.socket.close();
+                        connection.paused = true;
+                        connection.socket.close();
                     }
                     break;
                 case "list":
-                    bookmarkManager.addBookmarks(msg.Nodes);
+                    createBookmarks(msg.Nodes);
+                    break;
+                case "create":
+                    break;
+                case "delete":
                     break;
             }
-        }.bind(this);
+        };
 
         // Handle any errors that occur.
-        this.socket.onerror = function (error) {
+        connection.socket.onerror = function (error) {
             // console.log('WebSocket Error');
-        }.bind(this);
+        };
 
         // Set icon when socket closes
-        this.socket.onclose = function (event) {
-            extensionManager.setIcon(false);
-            this.status = 'disconnected';
-            if (!pauseconnection) {
+        connection.socket.onclose = function (event) {
+            setIcon(false);
+            connection.status = 'disconnected';
+            if (!connection.paused) {
                 setTimeout(function () {
                     console.log("retrying connection...");
                     connect();
                 }, 5000);
             }
-        }.bind(this);
+        };
     };
 
-    return new NetworkManager();
-})(teamconsole.bookmarkManager, teamconsole.extensionManager);
+    var init = function() {
+        addBookmarkListeners();
+        loadOptions(function() {
+           connect();
+        });
+    };
 
+    return {
+        //network methods
+        connect: connect,
+        connection: connection,
 
+        // extension config/icon methods
+        loadOptions:    loadOptions,
+        saveOptions:    saveOptions,
+        setIcon:        setIcon,
+        settings:       settings,
+
+        //entry point to load module and connect
+        init: init
+    };
+
+})(); // end teamconsole namespace
 
 
 // Main - we don't need to wait for DOM to begin
-teamconsole.networkManager.connect();
+teamconsole.init();
+
 
 
 

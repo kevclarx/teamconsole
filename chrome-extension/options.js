@@ -11,10 +11,10 @@ var port = document.getElementById('port');
 var password = document.getElementById('password');
 
 function saveOptions() {
-    background.teamconsole.extensionManager.server = server.value;
-    background.teamconsole.extensionManager.port = port.value;
-    background.teamconsole.extensionManager.password = password.value;
-    background.teamconsole.extensionManager.saveOptions(function() {
+    background.teamconsole.settings.server = server.value;
+    background.teamconsole.settings.port = port.value;
+    background.teamconsole.settings.password = password.value;
+    background.teamconsole.saveOptions(function() {
         statusdiv.innerHTML = '<b>Options saved.</b>';
         setTimeout(function() {
             statusdiv.innerHTML = '';
@@ -23,9 +23,9 @@ function saveOptions() {
 }
 
 function fillValues() {
-    server.value = background.teamconsole.extensionManager.server;
-    port.value = background.teamconsole.extensionManager.port;
-    password.value = background.teamconsole.extensionManager.password;
+    server.value = background.teamconsole.server;
+    port.value = background.teamconsole.port;
+    password.value = background.teamconsole.password;
 }
 
 document.addEventListener('DOMContentLoaded', fillValues);
