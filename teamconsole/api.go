@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"golang.org/x/net/websocket"
 	"os"
+	"strconv"
 )
 
 func Login(ws *websocket.Conn, msg WSMessage) bool {
@@ -18,7 +19,7 @@ func Login(ws *websocket.Conn, msg WSMessage) bool {
 }
 
 func List(ws *websocket.Conn, msg WSMessage) {
-	wsrep := ListReply{Type: "list", Nodes: bookmarkTreeNode.GetTree()}
+	wsrep := ListReply{Type: "list", Nodes: GetTree(bookmarkTreeNode)}
 	err := websocket.JSON.Send(ws, wsrep)
 	if err != nil {
 		fmt.Printf("Couldn't send login reply:%s\n", err.Error())
@@ -35,7 +36,7 @@ func Update(ws *websocket.Conn, msg WSMessage) {
 	}
 
 	// update our node tree with changed node
-	bookmarkTreeNode.UpdateNode(*node)
+	bookmarkTreeNode.UpdateNode(node)
 
 	// Write it out to disk
 	if err = bookmarkTreeNode.WriteFile(); err != nil {
@@ -58,16 +59,29 @@ func Delete(ws *websocket.Conn, msg WSMessage) {
 		return
 	}
 
+	wsrep := NodeReply{Type: "delete", Node: node}
+
 	// delete node from our node tree
-	bookmarkTreeNode.DeleteNode(*node)
+	if !bookmarkTreeNode.DeleteNode(node.Id, node.Parent) {
+		node.Id = ""
+		node.Text = "Must delete contents of folder first."
+	}
 
 	// Write it out to disk
 	if err = bookmarkTreeNode.WriteFile(); err != nil {
 		panic(err)
 	}
+
+	err = websocket.JSON.Send(ws, wsrep)
+	if err != nil {
+		fmt.Printf("Couldn't send reply:%s\n", err.Error())
+		os.Exit(1)
+	}
 }
 
 func Create(ws *websocket.Conn, msg WSMessage) {
+	wsrep := NodeReply{Type: "create", Node: nil}
+
 	node := &BookmarkTreeNode{}
 	err := json.Unmarshal(msg.Data, &node)
 	if err != nil {
@@ -76,10 +90,21 @@ func Create(ws *websocket.Conn, msg WSMessage) {
 	}
 
 	// add node to our node tree
-	bookmarkTreeNode.CreateNode(*node)
+	if bookmarkTreeNode.CreateNode(node) {
+		node.Id = strconv.Itoa(nextID)
+		nextID++
 
-	// Write it out to disk
-	if err = bookmarkTreeNode.WriteFile(); err != nil {
-		panic(err)
+		// Write it out to disk
+		if err = bookmarkTreeNode.WriteFile(); err != nil {
+			panic(err)
+		}
+		wsrep = NodeReply{Type: "create", Node: node}
 	}
+
+	err = websocket.JSON.Send(ws, wsrep)
+	if err != nil {
+		fmt.Printf("Couldn't send reply:%s\n", err.Error())
+		os.Exit(1)
+	}
+
 }

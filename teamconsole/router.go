@@ -18,8 +18,13 @@ type CodeReply struct {
 }
 
 type ListReply struct {
-	Type  string `json:"type"`
-	Nodes []*BookmarkTreeNode
+	Type  string              `json:"type"`
+	Nodes []*BookmarkTreeNode `json:"nodes"`
+}
+
+type NodeReply struct {
+	Type string            `json:"type"`
+	Node *BookmarkTreeNode `json:"node"`
 }
 
 func AuthError(ws *websocket.Conn, msg WSMessage) {

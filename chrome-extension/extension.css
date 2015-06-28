@@ -1,0 +1,22 @@
+
+#nodetree {
+    width: 300px;
+    float: left;
+}
+
+#optionsForm {
+    width: 300px;
+    margin-top: 15px;
+    margin-bottom: 10px;
+}
+
+.container hr {
+    margin: 2px 0;
+    width: 350px;
+}
+
+.statusbox {
+    clear: both;
+    display: block;
+    width: 350px;
+}

@@ -1,30 +1,126 @@
+<!DOCTYPE html>
 <html>
 <head>
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <link rel="stylesheet" href="3rd/bootstrap/bootstrap.min.css">
-    <link rel="stylesheet" href="3rd/bootstrap/bootstrap-theme.min.css">
+    <link rel="stylesheet" href="3rd/jsTree/themes/default/style.min.css">
+    <link rel="stylesheet" href="3rd/bootstrap3/bootstrap.min.css">
+    <link rel="stylesheet" href="3rd/font-awesome/css/font-awesome.min.css">
+    <link rel="stylesheet" href="extension.css">
+    <script src="3rd/jquery/jquery-2.1.4.js"></script>
+    <script src="3rd/bootstrap3/bootstrap.min.js"></script>
+    <script src="3rd/jsTree/jstree.min.js"></script>
     <script src="popup.js"></script>
 </head>
-<body style="width: 300px">
-    <div class="container">
+
+<body>
+<div class="container">
+    <header>
+        <span style="float: left"><b>TeamConsole</b></span>
+        <span style="float: right"><i class="fa fa-cog fa-fw"></i>&nbsp;<a href="options.html">Options</a></span>
+    </header>
+
+    <div class="statusbox">
+        <hr>
         <div class="row">
-            <div class="col-sm-12">
-                <div class="alert alert-danger" role="alert" id="connstatus">
-                    <strong>Connection status: </strong> Failed to connect to server.
-                </div>
+            <div class="col-xs-12">
+                <div id="connstatus"></div>
             </div>
         </div>
         <div class="row">
-            <div class="col-sm-12">
-                <div id="secureshell">
-                </div>
-            </div>
-        </div>
-        <div class="row">
-            <div class="col-xs-4 col-sm-4">
-                <button type="button" class="btn btn-xs btn-primary" id="options">options</button>
+            <div class="col-xs-12">
+                <div id="secureshell"></div>
             </div>
         </div>
     </div>
+
+    <div class="row">
+        <div class="col-xs-12">
+            <div id="toolbar">
+                <div class="btn-group btn-group-sm" role="group" aria-label="...">
+                    <button type="button" class="btn btn-default disabled" id="btn_connect">Connect</button>
+                    <button type="button" class="btn btn-default disabled" id="btn_new">New</button>
+                    <button type="button" class="btn btn-default disabled" id="btn_edit">Edit</button>
+                    <button type="button" class="btn btn-default disabled" id="btn_remove">Remove</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-xs-12">
+            <div class="input-group input-group-sm hidden" id="connectbox">
+                <span class="input-group-addon" id="connectusername">Username</span>
+                <input type="text" class="form-control" placeholder="" id="username" aria-describedby="basic-addon1">
+                <span class="input-group-addon" id="connectstring">@server.com:22</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-xs-12">
+            <div id="newbox" class="hidden">
+                <br>
+                <h4>Add new folder or device</h4>
+                <hr>
+                <div class="form-horizontal" id="newForm">
+                    <div class="form-group">
+                        <label for="new_name" class="col-xs-5 control-label">Name</label>
+                        <div class="col-xs-7">
+                            <input type="text" class="form-control" id="new_name" placeholder="">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="new_type" class="col-xs-5 control-label">Type</label>
+                        <div class="col-xs-7">
+                            <select class="form-control" id="new_type">
+                                <option value="folder">Folder</option>
+                                <option value="ssh">SSH</option>
+                                <option value="http">HTTP</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-group hidden" id="new_urlform">
+                        <label for="new_url" class="col-xs-5 control-label">URL</url></label>
+                        <div class="col-xs-7">
+                            <input type="text" class="form-control" id="new_url" placeholder="">
+                        </div>
+                    </div>
+
+                    <div class="hidden" id="new_ssh">
+                        <div class="form-group" id="ssh_server">
+                            <label for="new_host" class="col-xs-5 control-label">Host</url></label>
+                            <div class="col-xs-7">
+                                <input type="text" class="form-control" id="new_host" placeholder="">
+                            </div>
+                        </div>
+                        <div class="form-group" id="ssh_port">
+                            <label for="new_port" class="col-xs-5 control-label">Port</url></label>
+                            <div class="col-xs-7">
+                                <input type="text" class="form-control" id="new_port" value="22">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <div class="col-xs-offset-2 col-xs-4">
+                            <button type="submit" class="btn-sm" id="new_save">Save</button>
+                        </div>
+                        <div class="col-xs-offset-2 col-xs-4">
+                            <button type="submit" class="btn-sm" id="new_cancel">Cancel</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+
+    <div class="row">
+        <div class="col-xs-12">
+            <div id="nodetree"></div>
+        </div>
+    </div>
+</div>
 </body>
 </html>

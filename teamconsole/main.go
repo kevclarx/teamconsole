@@ -36,7 +36,7 @@ func main() {
 	}
 	nextID = bookmarkTreeNode.GetMaxID() + 1
 
-	fmt.Printf("Number of bookmark entries: %v\n", len(bookmarkTreeNode.GetTree()))
+	fmt.Printf("Number of bookmark entries: %v\n", len(GetTree(bookmarkTreeNode)))
 
 	http.Handle("/", websocket.Handler(WSHandler))
 	/*	func(w http.ResponseWriter, req *http.Request) {
