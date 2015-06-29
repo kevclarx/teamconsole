@@ -49,6 +49,11 @@ $(function () {
     // and no need for pub/sub
     background.teamconsole.registerView(function(viewEvent, err) {
         if(err) {
+            if(viewEvent === "delete" && err === 401) {
+                alert("Must delete contents of folder first.");
+                return;
+            }
+
             alert('Error: ' + viewEvent + ' code: ' + err);
             return;
         }
@@ -68,7 +73,7 @@ $(function () {
     $("#btn_edit").click(function() {
         $("#connectbox").addClass("hidden");
         $("#toolbar").addClass("hidden");
-        $("#nodetree").addClass("hidden");
+        $("#treepanel").addClass("hidden");
         $("#editbox").removeClass("hidden");
 
         // now populate fields with current node values
@@ -92,7 +97,7 @@ $(function () {
     $("#edit_cancel").click(function() {
         $("#editbox").addClass("hidden");
         $("#toolbar").removeClass("hidden");
-        $("#nodetree").removeClass("hidden");
+        $("#treepanel").removeClass("hidden");
     }.bind(this));
 
     //Save button on new console screen
@@ -108,7 +113,7 @@ $(function () {
         background.teamconsole.updateNode(editnode);
         $("#editbox").addClass("hidden");
         $("#toolbar").removeClass("hidden");
-        $("#nodetree").removeClass("hidden");
+        $("#treepanel").removeClass("hidden");
     }.bind(this));
 
 
@@ -116,7 +121,7 @@ $(function () {
     $("#btn_new").click(function() {
         $("#connectbox").addClass("hidden");
         $("#toolbar").addClass("hidden");
-        $("#nodetree").addClass("hidden");
+        $("#treepanel").addClass("hidden");
         $("#newbox").removeClass("hidden");
     });
 
@@ -141,7 +146,7 @@ $(function () {
     $("#new_cancel").click(function() {
         $("#newbox").addClass("hidden");
         $("#toolbar").removeClass("hidden");
-        $("#nodetree").removeClass("hidden");
+        $("#treepanel").removeClass("hidden");
     }.bind(this));
 
     //Save button on new console screen
@@ -157,7 +162,7 @@ $(function () {
         background.teamconsole.createNode(newnode);
         $("#newbox").addClass("hidden");
         $("#toolbar").removeClass("hidden");
-        $("#nodetree").removeClass("hidden");
+        $("#treepanel").removeClass("hidden");
     }.bind(this));
 
 
@@ -184,7 +189,15 @@ $(function () {
         }
     });
 
-
+    // search box for jsTree
+    var to = false;
+    $('#nodetree_search').keyup(function () {
+        if(to) { clearTimeout(to); }
+        to = setTimeout(function () {
+            var v = $('#nodetree_search').val();
+            $('#nodetree').jstree(true).search(v);
+        }, 250);
+    });
 
     // Our main console node tree, jsTree plugin for jQuery
     $('#nodetree').jstree({
@@ -206,7 +219,7 @@ $(function () {
                 "icon" : "fa fa-globe"
             }
         },
-        "plugins" : [ "types", "wholerow" ],
+        "plugins" : [ "types", "wholerow", "search" ],
     }).on("ready.jstree", function (e, data) {
         data.instance.open_node($("#0"));  // open root level on initial load
         data.instance.select_node($("#0")); // select root node on initial load
