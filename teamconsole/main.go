@@ -15,9 +15,13 @@ var bookmarksFile = flag.String("bmfile", "bookmarks.json", "file containing boo
 var authFile = flag.String("authfile", "auth.json", "file containing password, if empty no password is used")
 var port = flag.Int("port", 8888, "port for server to listen on")
 var nextID int
+var connections map[*websocket.Conn]bool
 
 func main() {
 	flag.Parse()
+
+	// Create our websocket pool
+	connections = make(map[*websocket.Conn]bool)
 
 	// Global bookmark tree struct
 	bookmarkTreeNode = &BookmarkTreeNode{}

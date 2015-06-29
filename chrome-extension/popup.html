@@ -36,10 +36,10 @@
         <div class="col-xs-12">
             <div id="toolbar">
                 <div class="btn-group btn-group-sm" role="group" aria-label="...">
-                    <button type="button" class="btn btn-default disabled" id="btn_connect">Connect</button>
-                    <button type="button" class="btn btn-default disabled" id="btn_new">New</button>
-                    <button type="button" class="btn btn-default disabled" id="btn_edit">Edit</button>
-                    <button type="button" class="btn btn-default disabled" id="btn_remove">Remove</button>
+                    <button type="button" class="btn btn-default" id="btn_connect">Connect</button>
+                    <button type="button" class="btn btn-default" id="btn_new">New</button>
+                    <button type="button" class="btn btn-default" id="btn_edit">Edit</button>
+                    <button type="button" class="btn btn-default" id="btn_remove">Remove</button>
                 </div>
             </div>
         </div>
@@ -110,7 +110,67 @@
                             <button type="submit" class="btn-sm" id="new_cancel">Cancel</button>
                         </div>
                     </div>
-                </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-xs-12">
+            <div id="editbox" class="hidden">
+                <br>
+                <h4>Edit folder or device</h4>
+                <hr>
+                <div class="form-horizontal" id="editForm">
+                    <div class="form-group">
+                        <label for="edit_name" class="col-xs-5 control-label">Name</label>
+                        <div class="col-xs-7">
+                            <input type="text" class="form-control" id="edit_name" placeholder="">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="edit_type" class="col-xs-5 control-label">Type</label>
+                        <div class="col-xs-7">
+                            <select class="form-control" id="edit_type">
+                                <option value="folder">Folder</option>
+                                <option value="ssh">SSH</option>
+                                <option value="http">HTTP</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-group hidden" id="edit_urlform">
+                        <label for="edit_url" class="col-xs-5 control-label">URL</url></label>
+                        <div class="col-xs-7">
+                            <input type="text" class="form-control" id="edit_url" placeholder="">
+                        </div>
+                    </div>
+
+                    <div class="hidden" id="edit_ssh">
+                        <div class="form-group" id="edit_ssh_server">
+                            <label for="edit_host" class="col-xs-5 control-label">Host</url></label>
+                            <div class="col-xs-7">
+                                <input type="text" class="form-control" id="edit_host" placeholder="">
+                            </div>
+                        </div>
+                        <div class="form-group" id="edit_ssh_port">
+                            <label for="edit_port" class="col-xs-5 control-label">Port</url></label>
+                            <div class="col-xs-7">
+                                <input type="text" class="form-control" id="edit_port" value="22">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <div class="col-xs-offset-2 col-xs-4">
+                            <button type="submit" class="btn-sm" id="edit_save">Save</button>
+                        </div>
+                        <div class="col-xs-offset-2 col-xs-4">
+                            <button type="submit" class="btn-sm" id="edit_cancel">Cancel</button>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>

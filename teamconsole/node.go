@@ -77,8 +77,15 @@ func GetTree(node *BookmarkTreeNode) []*BookmarkTreeNode {
 }
 
 // Traverse tree and update node passed in
-func (n *BookmarkTreeNode) UpdateNode(node *BookmarkTreeNode) {
-
+func (n *BookmarkTreeNode) UpdateNode(node *BookmarkTreeNode) *BookmarkTreeNode {
+	for _, treenode := range GetTree(bookmarkTreeNode) {
+		if treenode.Id == node.Id {
+			treenode.Text = node.Text
+			treenode.Url = node.Url
+			return treenode
+		}
+	}
+	return nil
 }
 
 // Traverse tree and delete node passed in

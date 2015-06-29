@@ -7,39 +7,44 @@ import (
 	"os"
 )
 
-type WSMessage struct {
+type WSRequest struct {
 	Type string          `json:"type"`
 	Data json.RawMessage `json:"data"`
 }
 
-type CodeReply struct {
-	Type string `json:"type"`
-	Code int64  `json:"code"`
-}
-
-type ListReply struct {
+type WSReply struct {
 	Type  string              `json:"type"`
+	Code  int64               `json:"code"`
 	Nodes []*BookmarkTreeNode `json:"nodes"`
 }
 
-type NodeReply struct {
-	Type string            `json:"type"`
-	Node *BookmarkTreeNode `json:"node"`
+func AuthError(ws *websocket.Conn, msg WSRequest) {
+	reply := WSReply{Type: "login", Code: 401}
+	UnicastReply(ws, &reply)
 }
 
-func AuthError(ws *websocket.Conn, msg WSMessage) {
-	wsrep := CodeReply{Type: "login", Code: 401}
-	err := websocket.JSON.Send(ws, wsrep)
-	if err != nil {
-		fmt.Printf("Couldn't send login unauthorized reply:%s\n", err.Error())
+func UnicastReply(ws *websocket.Conn, reply *WSReply) {
+	if err := websocket.JSON.Send(ws, reply); err != nil {
+		fmt.Printf("Couldn't send reply:%s\n", err.Error())
 		os.Exit(1)
+	}
+}
+
+func BroadcastReply(reply *WSReply) {
+	for conn := range connections {
+		if err := websocket.JSON.Send(conn, reply); err != nil {
+			fmt.Printf("Couldn't send reply:%s\n", err.Error())
+			os.Exit(1)
+		}
 	}
 }
 
 func WSHandler(ws *websocket.Conn) {
 	defer ws.Close()
 	var authenticated = false
-	var msg WSMessage
+	var msg WSRequest
+
+	connections[ws] = true
 
 	for {
 		err := websocket.JSON.Receive(ws, &msg)
@@ -57,7 +62,7 @@ func WSHandler(ws *websocket.Conn) {
 		case "login":
 			authenticated = Login(ws, msg)
 		case "list":
-			List(ws, msg)
+			List(ws)
 		case "update":
 			Update(ws, msg)
 		case "create":
@@ -66,4 +71,5 @@ func WSHandler(ws *websocket.Conn) {
 			Delete(ws, msg)
 		}
 	}
+	delete(connections, ws)
 }

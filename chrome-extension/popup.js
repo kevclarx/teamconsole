@@ -49,7 +49,7 @@ $(function () {
     // and no need for pub/sub
     background.teamconsole.registerView(function(viewEvent, err) {
         if(err) {
-            alert('Action:' + viewEvent + 'error: ' + err);
+            alert('Error: ' + viewEvent + ' code: ' + err);
             return;
         }
 
@@ -60,22 +60,60 @@ $(function () {
             $('#nodetree').jstree(true).settings.core.data = background.teamconsole.getNodes();
             $('#nodetree').jstree(true).refresh();
         }
-
-        if(viewEvent === 'delete') {
-            $('#nodetree').jstree(true).settings.core.data = background.teamconsole.getNodes();
-            $('#nodetree').jstree(true).refresh();
-        }
-
-
     });
 
     // add listeners
 
+    //Edit button
+    $("#btn_edit").click(function() {
+        $("#connectbox").addClass("hidden");
+        $("#toolbar").addClass("hidden");
+        $("#nodetree").addClass("hidden");
+        $("#editbox").removeClass("hidden");
+
+        // now populate fields with current node values
+        $("#edit_name").val(node.text);
+        $("#edit_type").val(node.type);
+        $("#edit_type").attr('disabled', true);
+
+        if(node.type === "http") {
+            $("#edit_url").val(node.url);
+            $("#edit_urlform").removeClass("hidden");
+        }
+
+        if(node.type === "ssh") {
+            $("#edit_host").val(node.url.split(":")[0]);
+            $("#edit_port").val(node.url.split(":")[1]);
+            $("#edit_ssh").removeClass("hidden");
+        }
+    });
+
+    // Cancel button on new console screen
+    $("#edit_cancel").click(function() {
+        $("#editbox").addClass("hidden");
+        $("#toolbar").removeClass("hidden");
+        $("#nodetree").removeClass("hidden");
+    }.bind(this));
+
+    //Save button on new console screen
+    $("#edit_save").click(function() {
+        var editnode = {
+            id:     node.id,
+            name: $("#edit_name").val(),
+            type:  $("#edit_type").val(),
+            url:  $("#edit_url").val(),
+            host: $("#edit_host").val(),
+            port: $("#edit_port").val()
+        };
+        background.teamconsole.updateNode(editnode);
+        $("#editbox").addClass("hidden");
+        $("#toolbar").removeClass("hidden");
+        $("#nodetree").removeClass("hidden");
+    }.bind(this));
+
+
     //New button
     $("#btn_new").click(function() {
-        if($("#btn_new").hasClass('disabled')) {
-            return;
-        }
         $("#connectbox").addClass("hidden");
         $("#toolbar").addClass("hidden");
         $("#nodetree").addClass("hidden");
@@ -123,13 +161,7 @@ $(function () {
     }.bind(this));
 
 
-    //Edit button
-    $("#btn_edit").click(function() {
-        $("#connectbox").addClass("hidden");
-        $("#toolbar").addClass("hidden");
-        $("#nodetree").addClass("hidden");
-        $("#editbox").removeClass("hidden");
-    });
+
 
     //Delete button
     $("#btn_remove").click(function() {
@@ -154,7 +186,7 @@ $(function () {
 
 
 
-
+    // Our main console node tree, jsTree plugin for jQuery
     $('#nodetree').jstree({
         'core': {
             'check_callback' : true,
@@ -169,23 +201,24 @@ $(function () {
     }).on("create_node.jstree", function(e, data) {
         console.log("created:" + data.text);
     }).on("select_node.jstree", function(e, data) {
+        // when clicking a node grey out options not applicable to that node
+        // set 'node' as currently selected which can be used elsewhere for modifying the tree
         node = data.node.original;
-        console.log(node);
 
         if(node.type === "folder") {  // type folder
             $("#connectbox").addClass("hidden");
-            $("#btn_connect").addClass("disabled");
-            $("#btn_new").removeClass("disabled");
-            $("#btn_edit").removeClass("disabled");
-            $("#btn_remove").removeClass("disabled");
+            $("#btn_connect").attr("disabled", true);
+            $("#btn_new").attr("disabled", false);
+            $("#btn_edit").attr("disabled", false);
+            $("#btn_remove").attr("disabled", false);
         }
 
         if(node.type === "ssh" || node.type === "http") {  // SSH, HTTP connection set toolbar states
             $("#connectbox").removeClass("hidden");
-            $("#btn_connect").removeClass("disabled");
-            $("#btn_new").addClass("disabled");
-            $("#btn_edit").removeClass("disabled");
-            $("#btn_remove").removeClass("disabled");
+            $("#btn_connect").attr("disabled", false);
+            $("#btn_new").attr("disabled", true);
+            $("#btn_edit").attr("disabled", false);
+            $("#btn_remove").attr("disabled", false);
 
             if(node.type === "ssh") {  //SSH connection show username box
                 $("#connectstring").text('@' + node.url);

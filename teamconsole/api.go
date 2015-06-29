@@ -4,30 +4,30 @@ import (
 	"encoding/json"
 	"fmt"
 	"golang.org/x/net/websocket"
-	"os"
 	"strconv"
 )
 
-func Login(ws *websocket.Conn, msg WSMessage) bool {
-	wsrep := CodeReply{Type: "login", Code: 200}
-	err := websocket.JSON.Send(ws, wsrep)
-	if err != nil {
-		fmt.Printf("Couldn't send login reply:%s\n", err.Error())
-		os.Exit(1)
+func Login(ws *websocket.Conn, msg WSRequest) bool {
+	reply := WSReply{Type: "login", Code: 200}
+
+	if true {
+		UnicastReply(ws, &reply)
+		return true
 	}
-	return true
+	return false
 }
 
-func List(ws *websocket.Conn, msg WSMessage) {
-	wsrep := ListReply{Type: "list", Nodes: GetTree(bookmarkTreeNode)}
-	err := websocket.JSON.Send(ws, wsrep)
-	if err != nil {
-		fmt.Printf("Couldn't send login reply:%s\n", err.Error())
-		os.Exit(1)
-	}
+func List(ws *websocket.Conn) {
+	reply := WSReply{Type: "list", Nodes: GetTree(bookmarkTreeNode)}
+	UnicastReply(ws, &reply)
 }
 
-func Update(ws *websocket.Conn, msg WSMessage) {
+func ListAll() {
+	reply := WSReply{Type: "list", Nodes: GetTree(bookmarkTreeNode)}
+	BroadcastReply(&reply)
+}
+
+func Update(ws *websocket.Conn, msg WSRequest) {
 	node := &BookmarkTreeNode{}
 	err := json.Unmarshal(msg.Data, &node)
 	if err != nil {
@@ -36,22 +36,19 @@ func Update(ws *websocket.Conn, msg WSMessage) {
 	}
 
 	// update our node tree with changed node
-	bookmarkTreeNode.UpdateNode(node)
-
-	// Write it out to disk
-	if err = bookmarkTreeNode.WriteFile(); err != nil {
-		panic(err)
+	if node = bookmarkTreeNode.UpdateNode(node); node != nil {
+		// Write it out to disk
+		if err = bookmarkTreeNode.WriteFile(); err != nil {
+			panic(err)
+		}
 	}
 
-	wsrep := CodeReply{Type: "update", Code: 200}
-	err = websocket.JSON.Send(ws, wsrep)
-	if err != nil {
-		fmt.Printf("Couldn't send reply:%s\n", err.Error())
-		os.Exit(1)
-	}
+	reply := &WSReply{Type: "update"}
+	reply.Nodes = append(reply.Nodes, node)
+	BroadcastReply(reply)
 }
 
-func Delete(ws *websocket.Conn, msg WSMessage) {
+func Delete(ws *websocket.Conn, msg WSRequest) {
 	node := &BookmarkTreeNode{}
 	err := json.Unmarshal(msg.Data, &node)
 	if err != nil {
@@ -59,12 +56,11 @@ func Delete(ws *websocket.Conn, msg WSMessage) {
 		return
 	}
 
-	wsrep := NodeReply{Type: "delete", Node: node}
+	reply := WSReply{Type: "delete", Code: 200}
 
 	// delete node from our node tree
 	if !bookmarkTreeNode.DeleteNode(node.Id, node.Parent) {
-		node.Id = ""
-		node.Text = "Must delete contents of folder first."
+		reply.Code = 401
 	}
 
 	// Write it out to disk
@@ -72,15 +68,14 @@ func Delete(ws *websocket.Conn, msg WSMessage) {
 		panic(err)
 	}
 
-	err = websocket.JSON.Send(ws, wsrep)
-	if err != nil {
-		fmt.Printf("Couldn't send reply:%s\n", err.Error())
-		os.Exit(1)
-	}
+	UnicastReply(ws, &reply)
+
+	// Now send updated tree to everybody, eventually change this to specific prune message
+	ListAll()
 }
 
-func Create(ws *websocket.Conn, msg WSMessage) {
-	wsrep := NodeReply{Type: "create", Node: nil}
+func Create(ws *websocket.Conn, msg WSRequest) {
+	reply := WSReply{Type: "create", Nodes: nil}
 
 	node := &BookmarkTreeNode{}
 	err := json.Unmarshal(msg.Data, &node)
@@ -98,13 +93,8 @@ func Create(ws *websocket.Conn, msg WSMessage) {
 		if err = bookmarkTreeNode.WriteFile(); err != nil {
 			panic(err)
 		}
-		wsrep = NodeReply{Type: "create", Node: node}
+		reply.Nodes = append(reply.Nodes, node)
 	}
 
-	err = websocket.JSON.Send(ws, wsrep)
-	if err != nil {
-		fmt.Printf("Couldn't send reply:%s\n", err.Error())
-		os.Exit(1)
-	}
-
+	UnicastReply(ws, &reply)
 }

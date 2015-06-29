@@ -81,6 +81,15 @@ var teamconsole = (function() {
         }
     };
 
+    var updateBookmark = function(node) {
+        for(var i=0; i < bookmarks.length; i++) {
+            if(bookmarks[i].id === node.id) {
+                bookmarks[i] = node;
+                return;
+            }
+        }
+    };
+
     var sendRequest = function (type, msg) {
         // create our request object
         var request = {
@@ -127,19 +136,25 @@ var teamconsole = (function() {
                     }
                     break;
                 case "create":
-                    if(msg.node) {
-                        bookmarks.push(msg.node);
+                    if(msg.nodes) {
+                        bookmarks.push(msg.nodes[0]);
                         if(_view) {
                             _view('update');
                         }
                     }
                     break;
                 case "delete":
-                    if(msg.node.id) {
-                        sendRequest("list",null);
-                    } else {
+                    if(msg.code !== 200) {
                         if(_view) {
-                            _view('delete', msg.node.text);
+                            _view('delete', msg.code);
+                        }
+                    }
+                    break;
+                case "update":
+                    if(msg.nodes[0].id) {
+                        updateBookmark(msg.nodes[0]);
+                        if(_view) {
+                            _view('update');
                         }
                     }
                     break;
@@ -188,6 +203,23 @@ var teamconsole = (function() {
         sendRequest("create", newnode);
     };
 
+    // send new node off to server to be created, expect created response with node details including id
+    var updateNode = function(node) {
+        var updatenode = {
+            id: node.id,
+            text: node.name,
+            type: node.type,
+            url: node.url
+        };
+
+        if(node.type === "ssh") {
+            updatenode.url = node.host + ":" + node.port;
+        }
+
+        sendRequest("update", updatenode);
+    };
+
+
     var deleteNode = function(nodeid, parentid) {
         sendRequest("delete", {id: nodeid, parent: parentid});
     };
@@ -213,6 +245,7 @@ var teamconsole = (function() {
         getNodes:       getNodes,
         createNode:     createNode,
         deleteNode:     deleteNode,
+        updateNode:     updateNode,
 
         //entry point and listener registration
         init: init,
