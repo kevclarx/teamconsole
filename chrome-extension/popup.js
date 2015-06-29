@@ -192,7 +192,21 @@ $(function () {
             'check_callback' : true,
             'data': background.teamconsole.getNodes()
         },
-        "plugins" : [ "wholerow" ],
+        "types" : {
+            "default": {
+                "icon" : "fa fa-folder"
+            },
+            "folder" : {
+                "icon" : "fa fa-folder"
+            },
+            "ssh" : {
+                "icon" : "fa fa-terminal"
+            },
+            "http" : {
+                "icon" : "fa fa-globe"
+            }
+        },
+        "plugins" : [ "types", "wholerow" ],
     }).on("ready.jstree", function (e, data) {
         data.instance.open_node($("#0"));  // open root level on initial load
         data.instance.select_node($("#0")); // select root node on initial load
