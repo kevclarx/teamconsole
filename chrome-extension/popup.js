@@ -76,6 +76,11 @@ $(function () {
         $("#treepanel").addClass("hidden");
         $("#editbox").removeClass("hidden");
 
+        if (node.type === "folder") {
+            $("#edit_urlform").addClass("hidden");
+            $("#edit_ssh").addClass("hidden");
+        }
+
         // now populate fields with current node values
         $("#edit_name").val(node.text);
         $("#edit_type").val(node.type);
