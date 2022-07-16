@@ -1,6 +1,8 @@
 ### TeamConsole
 *Kevin Clark kclark@tcpmutt.com*
 
+## DEPRECATED
+This repository has not been maintained for quite some time and likely no longer functions.
 
 Chrome extension for managing SSH and HTML bookmarks across a team using Chrome browser.  Easily navigate to either SSH or HTTP consoles of your devices in a customizable tree view within the browser.
 
@@ -28,7 +30,7 @@ connections are made.
 	Usage of teamconsole.exe:
   		-authfile="auth.json": 		file containing password, if empty no password is used
   		-bmfile="bookmarks.json": 	file containing bookmarks for teamconsole
-  		-port=8888: 				port for server to listen on
+  		-port=8888 			port for server to listen on
 ```
 
 
